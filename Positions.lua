@@ -192,6 +192,7 @@ end
 --------------------------------------------------------------------------------
 
 local unitPositions = {}
+local AceEvent = LibStub('AceEvent-3.0')
 
 local unitPositionProto = setmetatable({ heap = {} }, positionMeta)
 local unitPositionMeta = { __index = unitPositionProto }
@@ -201,14 +202,23 @@ function unitPositionProto:OnAcquire(unit)
 	positionProto.OnAcquire(self)
 	unitPositions[unit] = self
 	self.unit = unit
+	AceEvent.RegisterEvent(self, 'PARTY_MEMBERS_CHANGED')
 end
 
 function unitPositionProto:OnRelease()
 	unitPositions[self.unit] = nil
+	AceEvent.UnregisterAllEvents(self)
+end
+
+function unitPositionProto:PARTY_MEMBERS_CHANGED()
+	if not UnitExists(self.unit) then
+		return self:Release()
+	end
 end
 
 function unitPositionProto:GetMapCoords()
-	if UnitIsVisible(self.unit) then
+	local unit = self.unit
+	if UnitIsVisible(unit) and UnitIsConnected(unit) then
 		local x, y = GetPlayerMapPosition(self.unit)
 		if x ~= 0 and y ~= 0 then
 			return x, y
@@ -240,44 +250,25 @@ end
 -- Group and unit handling
 --------------------------------------------------------------------------------
 
-local UnitExists, UnitIsUnit, UnitInRaid, UnitInParty = UnitExists, UnitIsUnit, UnitInRaid, UnitInParty
-local function NormalizeUnit(unit)
-	if UnitExists(unit) then
-		if UnitIsUnit(unit, "player") then
-			return "player"
-		end
-		local inRaid = UnitInRaid(unit)
-		if inRaid then
-			return "raid"..(inRaid + 1)
-		elseif UnitInParty(unit) then
-			for i = 1, GetNumPartyMembers() do
-				local pUnit = "party"..i
-				if UnitIsUnit(unit, pUnit) then
-					return pUnit
-				end
-			end
-		end
-	end
-end
+local guidToUnit = {}
 
 setmetatable(unitPositions, { __index = function(t, unit)
-	local normalizedUnit = NormalizeUnit(unit)
 	local position = false
-	if normalizedUnit then
-		if normalizedUnit ~= unit then
-			position = t[normalizedUnit]
-		elseif unit == "player" then
-			position = AcquirePosition(playerPositionMeta, "player")
-		else
-			position = AcquirePosition(unitPositionMeta, unit)
-		end
+	if unit == "player" then
+		position = AcquirePosition(playerPositionMeta, "player")
+	elseif unit then
+		position = AcquirePosition(unitPositionMeta, unit)
 	end
 	t[unit] = position
 	return position
 end})
 
+function addon.GetNormalizedUnit(unit)
+	return guidToUnit[unit and UnitGUID(unit)]
+end
+
 function addon:GetUnitPosition(unit)
-	return unitPositions[unit]
+	return unitPositions[guidToUnit[unit and UnitGUID(unit)]]
 end
 
 function addon:PARTY_MEMBERS_CHANGED()
@@ -289,17 +280,14 @@ function addon:PARTY_MEMBERS_CHANGED()
 		end
 	end
 	if groupType ~= self.groupType or groupSize ~= self.groupSize then
-		local oldType, oldSize = self.groupType, self.groupSize
-		self.groupType, self.groupSize = groupType, groupSize
-		for unit, position in pairs(unitPositions) do
-			local normalizedUnit = NormalizeUnit(unit)
-			if normalizedUnit and not position then
-				unitPositions[unit] = nil
-			elseif not normalizedUnit and position then
-				position:Release()
-			end
+		wipe(guidToUnit)
+		for i = 1, groupSize do
+			local unit = groupType .. i
+			guidToUnit[UnitGUID(unit)] = unit
 		end
-		self:SendMessage('AdiProx_GroupChanged', groupType, groupSize, oldType, oldSize)
+		guidToUnit[UnitGUID("player")] = "player"
+		self.groupType, self.groupSize = groupType, groupSize
+		self:SendMessage('AdiProx_GroupChanged')
 	end
 end
 
