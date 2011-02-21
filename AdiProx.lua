@@ -43,6 +43,7 @@ local prefs
 
 local UPDATE_PERIOD = 1/30
 local ZOOM_GRANULARITY = 30
+addon.MAX_RANGE = ZOOM_GRANULARITY * 4
 
 local LibMapData = LibStub('LibMapData-1.0')
 
