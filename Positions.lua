@@ -116,7 +116,7 @@ function positionProto:UpdateRelativeCoords(playerX, playerY, rotangle)
 		self.distance, dx, dy = LibMapData:Distance(addon.currentMap, addon.currentFloor, playerX, playerY, mapX, mapY)
 		self.relX = (dx * cos(rotangle)) - (-1 * dy * sin(rotangle))
 		self.relY = (dx * sin(rotangle)) + (-1 * dy * cos(rotangle))
-		self.visible = true
+		self.visible = self.distance < 100
 	else
 		self.visible = false
 	end
@@ -202,18 +202,10 @@ function unitPositionProto:OnAcquire(unit)
 	positionProto.OnAcquire(self)
 	unitPositions[unit] = self
 	self.unit = unit
-	AceEvent.RegisterEvent(self, 'PARTY_MEMBERS_CHANGED')
 end
 
 function unitPositionProto:OnRelease()
 	unitPositions[self.unit] = nil
-	AceEvent.UnregisterAllEvents(self)
-end
-
-function unitPositionProto:PARTY_MEMBERS_CHANGED()
-	if not UnitExists(self.unit) then
-		return self:Release()
-	end
 end
 
 function unitPositionProto:GetMapCoords()
@@ -249,6 +241,8 @@ end
 --------------------------------------------------------------------------------
 -- Group and unit handling
 --------------------------------------------------------------------------------
+
+local GetNumRaidMembers, GetNumPartyMembers, UnitGUID, UnitExists = GetNumRaidMembers, GetNumPartyMembers, UnitGUID, UnitExists
 
 local guidToUnit = {}
 
@@ -286,6 +280,11 @@ function addon:PARTY_MEMBERS_CHANGED()
 			guidToUnit[UnitGUID(unit)] = unit
 		end
 		guidToUnit[UnitGUID("player")] = "player"
+		for unit, position in pairs(unitPositions) do
+			if not UnitExists(unit) or unit ~= guidToUnit[UnitGUID(unit)] then
+				position:Release()
+			end
+		end
 		self.groupType, self.groupSize = groupType, groupSize
 		self:SendMessage('AdiProx_GroupChanged')
 	end
