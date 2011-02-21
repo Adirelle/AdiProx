@@ -103,7 +103,7 @@ function aptest()
 	if px ~= 0 and py ~= 0 then
 		local pos = addon:GetStaticPosition(px + math.random(-0.02, 0.02), py + math.random(-0.02, 0.02))
 		pos:SetAlertCondition(5)
-		local mark = addon:AcquireWidget("icon"):SetSize(16):SetTexture([[Interface\Minimap\UI-Minimap-Ping-Center]])
+		local mark = addon:AcquireWidget("range"):SetRadius(5):SetTexture([[Interface\Cooldown\ping4]], "ADD"):SetRadiusModifier(1.1)
 		pos:Attach("mark", mark)
 	end
 end
