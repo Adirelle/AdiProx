@@ -115,6 +115,9 @@ end
 function widgetProto:OnAlertChanged()
 end
 
+function widgetProto:OnPositionChanged()	
+end
+
 function widgetProto:SetPosition(position)
 	if position ~= self.position then
 		local oldPosition = self.position
@@ -126,6 +129,7 @@ function widgetProto:SetPosition(position)
 			self:Hide()
 		end
 		self.x, self.y = nil, nil
+		self:OnPositionChanged()
 	end
 	return self
 end
