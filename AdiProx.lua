@@ -41,7 +41,8 @@ local DEFAULT_SETTINGS = {}
 
 local prefs
 
-local UPDATE_PERIOD = 1/25
+local UPDATE_PERIOD = 1/30
+local ZOOM_GRANULARITY = 30
 
 local LibMapData = LibStub('LibMapData-1.0')
 
@@ -74,27 +75,27 @@ function addon:OnEnable()
 		self:CreateTheFrame()
 	end
 	self.frame:Show()
-	
+
 	if not self.updateFrame then
 		self.updateFrame = CreateFrame("Frame")
 		self.updateFrame:SetScript('OnUpdate', function(_, elapsed) return self:OnUpdate(elapsed) end)
 	end
 	self.updateFrame:Show()
 
-	self.zoomRange = 40
+	self.zoomRange = ZOOM_GRANULARITY
 
 	LibMapData.RegisterCallback(self, "MapChanged")
 	self:MapChanged("OnEnable", GetMapInfo(), GetCurrentMapDungeonLevel())
-	
+
 	self:RegisterEvent('PARTY_MEMBERS_CHANGED')
 	self:PARTY_MEMBERS_CHANGED("OnEnable")
-	
+
 	local player = self:GetUnitPosition("player")
 	if not player:GetWidget('arrow') then
 		local playerArrow = self:AcquireWidget("icon"):SetSize(32):SetTexture([[Interface\Minimap\MinimapArrow]])
 		player:Attach("arrow", playerArrow)
 	end
-	
+
 end
 
 function aptest()
@@ -126,10 +127,10 @@ end
 --------------------------------------------------------------------------------
 -- Create the proximity frame
 --------------------------------------------------------------------------------
-	
+
 function addon:CreateTheFrame()
 	local frame = CreateFrame("Frame", "AdiProxFrame", UIParent)
-	frame:SetClampedToScreen(true) 
+	frame:SetClampedToScreen(true)
 	frame:SetSize(200, 200)
 	frame:SetPoint("BOTTOMRIGHT", UIParent, "BOTTOMRIGHT", -300, 300)
 	frame:SetBackdrop{
@@ -186,28 +187,30 @@ end
 local delay = 0
 function addon:OnUpdate(elapsed)
 	delay = delay + elapsed
-	if delay < UPDATE_PERIOD and not self.forceUpdate then
+	if delay >= UPDATE_PERIOD or self.forceUpdate then
+		elapsed, delay, self.forceUpdate = delay, 0, nil
+	else
 		return
 	end
-	elapsed, delay = delay, 0
-	self.forceUpdate = nil
-	
+
 	local px, py = GetPlayerMapPosition("player")
 	if px == 0 and py == 0 then
 		self.frame:Hide()
 		return
 	end
-	
+
 	local pixelsPerYard = self.frame:GetWidth() / (self.zoomRange * 2)
 	local rotangle = 2 * math.pi - GetPlayerFacing()
 	local showMe = false
 	local playerAlert, playerPos = false, self:GetUnitPosition("player")
 	local playerDist, playerInvert = playerPos:GetAlertCondition()
-	
+
+	local maxDist = ZOOM_GRANULARITY
 	for position in self:IterateActivePositions() do
 		if position ~= playerPos then
 			local visible, distance = position:UpdateRelativeCoords(px, py, rotangle)
 			if visible then
+				maxDist = max(maxDist, distance)
 				if TestCondition(distance, playerDist, playerInvert) then
 					position:SetAlert(true)
 					playerAlert = true
@@ -220,8 +223,7 @@ function addon:OnUpdate(elapsed)
 			end
 		end
 	end
-	
-	playerPos:SetAlert(playerAlert)	
+	playerPos:SetAlert(playerAlert)
 	if playerPos:UpdateWidgets(elapsed, pixelsPerYard) then
 		showMe = true
 	end
@@ -237,5 +239,17 @@ function addon:OnUpdate(elapsed)
 	else
 		self.frame:Hide()
 	end
+
+	local newZoom = ZOOM_GRANULARITY * math.pow(2, ceil(math.log(maxDist / ZOOM_GRANULARITY) / math.log(2)))
+	if newZoom ~= self.targetZoom then
+		self.zoomSpeed = max(newZoom, self.targetZoom or 0) / 0.5
+		self.targetZoom = newZoom
+	end
+	if newZoom > self.zoomRange then
+		self.zoomRange = min(self.zoomRange + elapsed * self.zoomSpeed, newZoom)
+	elseif newZoom < self.zoomRange then
+		self.zoomRange = max(self.zoomRange - elapsed * self.zoomSpeed, newZoom)
+	end
+
 end
 
