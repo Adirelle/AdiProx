@@ -41,8 +41,8 @@ local DEFAULT_SETTINGS = {}
 
 local prefs
 
-local UPDATE_PERIOD = 1/30
-local ZOOM_GRANULARITY = 30
+local UPDATE_PERIOD = 1/20
+local ZOOM_GRANULARITY = 25
 
 local LibMapData = LibStub('LibMapData-1.0')
 
@@ -92,7 +92,7 @@ function addon:OnEnable()
 
 	local player = self:GetUnitPosition("player")
 	if not player:GetWidget('arrow') then
-		local playerArrow = self:AcquireWidget("icon"):SetSize(32):SetTexture([[Interface\Minimap\MinimapArrow]])
+		local playerArrow = self:AcquireWidget("range"):SetRadius(2):SetRadiusModifier(2):SetTexture([[Interface\Minimap\MinimapArrow]])
 		player:Attach("arrow", playerArrow)
 	end
 
@@ -101,7 +101,7 @@ end
 function aptest()
 	local px, py = GetPlayerMapPosition("player")
 	if px ~= 0 and py ~= 0 then
-		local pos = addon:GetStaticPosition(px + math.random(-0.02, 0.02), py + math.random(-0.02, 0.02))
+		local pos = addon:GetStaticPosition(px, py)
 		pos:SetAlertCondition(5)
 		local mark = addon:AcquireWidget("range"):SetRadius(5):SetTexture([[Interface\Cooldown\ping4]], "ADD"):SetRadiusModifier(1.1)
 		pos:Attach("mark", mark)
@@ -131,7 +131,7 @@ end
 function addon:CreateTheFrame()
 	local frame = CreateFrame("Frame", "AdiProxFrame", UIParent)
 	frame:SetClampedToScreen(true)
-	frame:SetSize(200, 200)
+	frame:SetSize(201, 201)
 	frame:SetPoint("BOTTOMRIGHT", UIParent, "BOTTOMRIGHT", -300, 300)
 	frame:SetBackdrop{
 	  bgFile = [[Interface\Tooltips\UI-Tooltip-Background]], tile = false, tileSize = 0,
@@ -142,14 +142,14 @@ function addon:CreateTheFrame()
 	frame:SetBackdropBorderColor(1, 1, 1, 0.8)
 	self.frame = frame
 
-	local scrollChild = CreateFrame("Frame", nil, frame)
-	scrollChild:SetSize(200, 200)
-	self.container = scrollChild
-
 	local scrollParent = CreateFrame("ScrollFrame", nil, frame)
 	scrollParent:SetPoint("TOPLEFT", frame, "TOPLEFT", 5, -5)
 	scrollParent:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -5, 5)
+
+	local scrollChild = CreateFrame("Frame", nil, frame)
 	scrollParent:SetScrollChild(scrollChild)
+	self.container = scrollChild
+	scrollChild:SetSize(scrollParent:GetSize())
 
 	local ticks = {}
 	for i, v in ipairs{{1,0}, {0,1}, {-1, 0}, {0, -1}} do
@@ -184,6 +184,8 @@ local function TestCondition(distance, threshold, invert)
 	end
 end
 
+local log, pow = math.log, math.pow
+local log2 = log(2)
 local delay = 0
 function addon:OnUpdate(elapsed)
 	delay = delay + elapsed
@@ -199,7 +201,7 @@ function addon:OnUpdate(elapsed)
 		return
 	end
 
-	local pixelsPerYard = self.frame:GetWidth() / (self.zoomRange * 2)
+	local pixelsPerYard = self.container:GetWidth() / (self.zoomRange * 2)
 	local rotangle = 2 * math.pi - GetPlayerFacing()
 	local showMe = false
 	local playerAlert, playerPos = false, self:GetUnitPosition("player")
@@ -239,8 +241,9 @@ function addon:OnUpdate(elapsed)
 	else
 		self.frame:Hide()
 	end
-
-	local newZoom = ZOOM_GRANULARITY * math.pow(2, ceil(math.log(maxDist / ZOOM_GRANULARITY) / math.log(2)))
+	
+	--local newZoom = ZOOM_GRANULARITY * ceil(maxDist / ZOOM_GRANULARITY)
+	local newZoom = ZOOM_GRANULARITY * pow(2, ceil(log(maxDist / ZOOM_GRANULARITY) / log2))
 	if newZoom ~= self.targetZoom then
 		self.zoomSpeed = max(newZoom, self.targetZoom or 0) / 0.5
 		self.targetZoom = newZoom
