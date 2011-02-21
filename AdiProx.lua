@@ -149,6 +149,24 @@ function addon:CreateTheFrame()
 	scrollParent:SetPoint("TOPLEFT", frame, "TOPLEFT", 5, -5)
 	scrollParent:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -5, 5)
 	scrollParent:SetScrollChild(scrollChild)
+
+	local ticks = {}
+	for i, v in ipairs{{1,0}, {0,1}, {-1, 0}, {0, -1}} do
+		local dx, dy = unpack(v)
+		for j = 1, 3 do
+			local dist = j * 20
+			local tick = self.container:CreateTexture(nil, "BACKGROUND")
+			tick:SetTexture(0.7, 0.7, 0.7, 0.5)
+			if dx ~= 0 then
+				tick:SetSize(1, 5)
+			else
+				tick:SetSize(5, 1)
+			end
+			tick.x, tick.y = dist * dx, dist * dy
+			ticks[tick] = true
+		end
+	end
+	self.zoomTicks = ticks
 end
 
 --------------------------------------------------------------------------------
@@ -210,6 +228,12 @@ function addon:OnUpdate(elapsed)
 	
 	if showMe or true then
 		self.frame:Show()
+		if self.zoomRange ~= self.tickRange then
+			for tick in pairs(self.zoomTicks) do
+				tick:SetPoint("CENTER", tick.x * pixelsPerYard, tick.y * pixelsPerYard)
+			end
+			self.tickRange = self.zoomRange
+		end
 	else
 		self.frame:Hide()
 	end
