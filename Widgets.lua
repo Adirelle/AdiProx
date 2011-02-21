@@ -51,6 +51,7 @@ local function NewWidgetType(typeName, parentName)
 		return proto
 	end
 end
+addon.NewWidgetType = NewWidgetType
 
 --------------------------------------------------------------------------------
 -- Abstract widget
