@@ -76,11 +76,11 @@ end
 
 function widgetProto:OnAcquire()
 	self.important = false
+	self.alert = false
 end
 
 function widgetProto:OnRelease()
-	self:SetPosition(nil)
-	self:SetAlert(false)
+	self:SetPosition(nil)	
 end
 
 function widgetProto:Show()
@@ -138,7 +138,7 @@ function widgetProto:OnUpdate(x, y)
 		self.x, self.y = x, y
 		self.frame:SetPoint("CENTER", x, y)
 	end
-	return true, self.important
+	return true, self.alert or self.important
 end
 
 --------------------------------------------------------------------------------
@@ -151,30 +151,54 @@ function iconWidgetProto:CreateFrame(parent)
 	return parent:CreateTexture(nil, "ARTWORK")	
 end
 
-function iconWidgetProto:OnAcquire()
-	widgetProto.OnAcquire(self)
-	self.colorR, self.colorG, self.colorB, self.alpha = 1, 1, 1, 1
+local function SetColor(c, r, g, b, a)
+	if c[1] ~= r or c[2] ~= g or c[3] ~= b or c[4] ~= a then
+		c[1], c[2], c[3], c[4] = r, g, b, a
+		return true
+	end
 end
 
-function iconWidgetProto:SetTexture(texture)
+function iconWidgetProto:OnCreate()
+	widgetProto.OnCreate(self)
+	self.color = { 1, 1, 1, 1 }
+	self.alertColor = { 1, 1, 1 }
+end
+
+function iconWidgetProto:OnAcquire()
+	widgetProto.OnAcquire(self)
+	SetColor(self.color, 1, 1, 1, 1)
+	SetColor(self.alertColor, 1, 0, 0)
+	self.frame:SetBlendMode("BLEND")
+end
+
+function iconWidgetProto:SetTexture(texture, blendMode)
 	if texture ~= self.texture then
 		self.texture = texture
 		self.frame:SetTexture(texture)
+	end
+	if blendMode then
+		self.frame:SetBlendMode(blendMode)
 	end
 	return self
 end
 
 function iconWidgetProto:SetColor(r, g, b, a)
-	self.colorR, self.colorG, self.colorB, self.alpha = r, g, b, a or 1
-	self:OnAlertChanged()
+	if SetColor(self.color, r, g, b, a or 1) then
+		self:OnAlertChanged()
+	end
+	return self
+end
+
+function iconWidgetProto:SetAlertColor(r, g, b)
+	if SetColor(self.alertColor, r, g, b) then
+		self:OnAlertChanged()
+	end
 	return self
 end
 
 function iconWidgetProto:OnAlertChanged()
-	local r, g, b, a = self.colorR, self.colorG, self.colorB, self.alpha
-	if self.alert then
-		r, g, b = 1, 0, 0
-	end
+	local a = self.color[4]
+	local r, g, b = unpack(self.alert and self.alertColor or self.color, 1, 3)
 	self.frame:SetVertexColor(r, g, b, a)
 end
 
@@ -198,18 +222,22 @@ end
 local rangeWidgetProto = NewWidgetType('range', 'icon')
 
 function rangeWidgetProto:OnAcquire()
-	iconWidgetProto.OnAcquire(self, 0)
+	iconWidgetProto.OnAcquire(self)
+	self.radius, self.radiusModifier = 16, 1
 end
 
 function rangeWidgetProto:SetRadius(radius)
-	if radius ~= self.radius then
-		self.radius = radius
-	end
+	self.radius = radius
+	return self
+end
+
+function rangeWidgetProto:SetRadiusModifier(radiusModifier)
+	self.radiusModifier = radiusModifier
 	return self
 end
 
 function rangeWidgetProto:OnUpdate(uiRelX, uiRelY, distance, elapsed, pixelsPerYard)
-	self:SetSize(self.radius * pixelsPerYard)
+	self:SetSize(2 * self.radius * pixelsPerYard * self.radiusModifier)
 	return iconWidgetProto.OnUpdate(self, uiRelX, uiRelY, distance, elapsed, pixelsPerYard)
 end
 
