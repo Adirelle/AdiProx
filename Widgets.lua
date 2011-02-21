@@ -86,6 +86,7 @@ end
 function widgetProto:Show()
 	if not self.frame:IsShown() then
 		self.frame:Show()
+		addon.forceUpdate = true
 	end
 	return self
 end
@@ -93,6 +94,7 @@ end
 function widgetProto:Hide()
 	if self.frame:IsShown() then
 		self.frame:Hide()
+		addon.forceUpdate = true
 	end
 	return self
 end
@@ -124,11 +126,13 @@ function widgetProto:SetPosition(position)
 		if oldPosition then
 			oldPosition:Detach(self)
 		end
-		if not position then
-			self:Hide()
-		end
 		self.x, self.y = nil, nil
 		self:OnPositionChanged()
+		if position then
+			self:Show()
+		else
+			self:Hide()
+		end
 	end
 	return self
 end
