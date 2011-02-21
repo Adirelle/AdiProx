@@ -144,10 +144,10 @@ function addon:CreateTheFrame()
 	local scrollChild = CreateFrame("Frame", nil, frame)
 	scrollChild:SetSize(200, 200)
 	self.container = scrollChild
-	
+
 	local scrollParent = CreateFrame("ScrollFrame", nil, frame)
-	scrollParent:SetPoint("TOPLEFT", frame, "TOPLEFT", 2, -2)
-	scrollParent:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -2, 2)
+	scrollParent:SetPoint("TOPLEFT", frame, "TOPLEFT", 5, -5)
+	scrollParent:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -5, 5)
 	scrollParent:SetScrollChild(scrollChild)
 end
 
