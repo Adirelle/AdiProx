@@ -212,8 +212,8 @@ end
 
 function unitPositionProto:GetMapCoords()
 	local unit = self.unit
-	if UnitIsVisible(unit) and UnitIsConnected(unit) then
-		local x, y = GetPlayerMapPosition(self.unit)
+	if UnitIsConnected(unit) and UnitInPhase(unit) then
+		local x, y = GetPlayerMapPosition(unit)
 		if x ~= 0 and y ~= 0 then
 			return x, y
 		end
