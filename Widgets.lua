@@ -45,6 +45,7 @@ local function NewWidgetType(typeName, parentName)
 	registry[typeName] = meta
 	if parentName then
 		local parent = registry[parentName]
+		assert(parent)
 		setmetatable(proto, parent)
 		return proto, parent.__index
 	else
@@ -84,7 +85,6 @@ end
 
 function widgetProto:Show()
 	if not self.frame:IsShown() then
-		self:Debug('Show')
 		self.frame:Show()
 	end
 	return self
@@ -92,7 +92,6 @@ end
 
 function widgetProto:Hide()
 	if self.frame:IsShown() then
-		self:Debug('Hide')
 		self.frame:Hide()
 	end
 	return self

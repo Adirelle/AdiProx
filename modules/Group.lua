@@ -51,44 +51,53 @@ local AceEvent = LibStub('AceEvent-3.0')
 
 function partyWidgetProto:CreateFrame(parent)
 	local frame = CreateFrame("Frame", nil, parent)
+	frame:SetSize(8, 8)
 
 	local icon = frame:CreateTexture(nil, "ARTWORK")
 	icon:SetPoint("CENTER")
-	self.icon = icon
+	self.Icon = icon
 
-	local name = frame:CreateFontstring(nil, "ARTWORK", "SystemFont_Shadow_Small")
+	local name = frame:CreateFontString(nil, "ARTWORK", "SystemFont_Shadow_Small")
 	name:SetPoint("BOTTOM", icon, "CENTER", 0, 8)
-	self.name = name
+	self.Name = name
 
 	return frame
 end
 
 function partyWidgetProto:Update()
 	local unit = self.unit
-	local _, class = UnitClass(unit)	
-	local color = classColors[unit]
-	
-	self.name:SetText(UnitName(unit))
-	self.name:SetTextColor(color.r, color.g, color.b)
+	if not unit then return end
+	local _, class = UnitClass(unit)
+	local color = classColors[class]
+
+	local name = self.Name
+	name:SetText(UnitName(unit))
+	if color then
+		name:SetTextColor(color.r, color.g, color.b)
+	end
 	self:OnAlertChanged()
-	
+
 	local symbol = GetRaidTargetIndex(unit)
+	local icon = self.Icon
 	if symbol and symbol > 0 then
-		self.icon:SetTexture([[TargetingFrame\TargetingFrame\UI-RaidTargetingIcon_]]..symbol)
-		self.icon:SetTexCoord(0, 1, 0, 1)
-		self.icon:SetVertexColor(1, 1, 1, 1)
-		self.icon:SetSize(16, 16)
+		icon:SetTexture([[Interface\TargetingFrame\UI-RaidTargetingIcon_]]..symbol)
+		icon:SetTexCoord(0, 1, 0, 1)
+		icon:SetVertexColor(1, 1, 1, 1)
+		icon:SetSize(8, 8)
 	else
-		self.icon:SetTexture([[Interface\Minimap\PartyRaidBlips]])
-		self.icon:SetTexCoord(0.875, 1, 0.25, 0.5)
-		self.icon:SetVertexColor(color.r, color.g, color.b ,1)
-		self.icon:SetSize(32, 32)
+		icon:SetTexture([[Interface\Minimap\PartyRaidBlips]])
+		icon:SetTexCoord(0.875, 1, 0.25, 0.5)
+		if color then
+			icon:SetVertexColor(color.r, color.g, color.b ,1)
+		end
+		icon:SetSize(16, 16)
 	end
 end
 
 function partyWidgetProto:OnPositionChanged()
 	local unit = self.position and self.position.unit
 	if unit ~= self.unit then
+		self:Debug('OnPositionChanged', unit)
 		if unit and not self.unit then
 			AceEvent.RegisterEvent(self, 'UNIT_NAME_UPDATE', 'OnUnitEvent')
 			AceEvent.RegisterEvent(self, 'RAID_TARGET_UPDATE', 'Update')
@@ -105,9 +114,9 @@ end
 
 function partyWidgetProto:OnAlertChanged()
 	if self.alert then
-		self.name:Show()
+		self.Name:Show()
 	else
-		self.name:Hide()
+		self.Name:Hide()
 	end
 end
 

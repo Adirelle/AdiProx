@@ -36,23 +36,25 @@ end
 -- Abstract position
 --------------------------------------------------------------------------------
 
-local positionProto = {}
+local positionProto = { Debug = addon.Debug  }
 local positionMeta = { __index = positionProto }
 
-positionProto.Debug = addon.Debug
-
 function positionProto:OnCreate()
+	self:Debug('OnCreate')
 	self.widgets = {}
 end
 
 function positionProto:OnAcquire()
+	self:Debug('OnAcquire')
 end
 
 function positionProto:Release()
 	if activePositions[self] then
 		activePositions[self] = nil
-		for widget in pairs(self.widgets) do
-			self:Detach(widget)
+		self:Debug('Release')
+		for name, widget in pairs(self.widgets) do
+			self.widgets[name] = nil
+			widget:SetPosition(nil)
 		end
 		self:OnRelease()
 		self.heap[self] = true
@@ -281,7 +283,9 @@ function addon:PARTY_MEMBERS_CHANGED()
 		end
 		guidToUnit[UnitGUID("player")] = "player"
 		for unit, position in pairs(unitPositions) do
-			if not UnitExists(unit) or unit ~= guidToUnit[UnitGUID(unit)] then
+			if position == false then
+				unitPositions[unit] = nil
+			elseif (not UnitExists(unit) or unit ~= guidToUnit[UnitGUID(unit)]) then
 				position:Release()
 			end
 		end
