@@ -56,6 +56,12 @@ function partyWidgetProto:CreateFrame(parent)
 	local icon = frame:CreateTexture(nil, "ARTWORK")
 	icon:SetPoint("CENTER")
 	self.Icon = icon
+	
+	local targetRing = frame:CreateTexture(nil, "OVERLAY")
+	targetRing:SetTexture([[Interface\Cooldown\ping4]])
+	targetRing:SetPoint("CENTER")
+	targetRing:SetSize(32, 32)
+	self.TargetRing = targetRing
 
 	local name = frame:CreateFontString(nil, "ARTWORK", "SystemFont_Shadow_Small")
 	name:SetPoint("BOTTOM", icon, "CENTER", 0, 8)
@@ -92,6 +98,8 @@ function partyWidgetProto:Update()
 		end
 		icon:SetSize(16, 16)
 	end
+	
+	self:PLAYER_TARGET_CHANGED()
 end
 
 function partyWidgetProto:OnPositionChanged()
@@ -102,10 +110,12 @@ function partyWidgetProto:OnPositionChanged()
 			AceEvent.RegisterEvent(self, 'UNIT_NAME_UPDATE', 'OnUnitEvent')
 			AceEvent.RegisterEvent(self, 'RAID_TARGET_UPDATE', 'Update')
 			AceEvent.RegisterEvent(self, 'PARTY_MEMBERS_CHANGED', 'Update')
+			AceEvent.RegisterEvent(self, 'PLAYER_TARGET_CHANGED')
 		elseif not unit and self.unit then
 			AceEvent.UnregisterEvent(self, 'UNIT_NAME_UPDATE')
 			AceEvent.UnregisterEvent(self, 'RAID_TARGET_UPDATE')
 			AceEvent.UnregisterEvent(self, 'PARTY_MEMBERS_CHANGED')
+			AceEvent.UnregisterEvent(self, 'PLAYER_TARGET_CHANGED')
 		end
 		self.unit = unit
 		self:Update()
@@ -120,8 +130,22 @@ function partyWidgetProto:OnAlertChanged()
 	end
 end
 
+function partyWidgetProto:PLAYER_TARGET_CHANGED()
+	if self.unit and UnitIsUnit(self.unit, "target") then
+		self.TargetRing:Show()
+	else
+		self.TargetRing:Hide()
+	end
+end
+
 function partyWidgetProto:OnUnitEvent(event, unit)
 	if unit == self.unit then
 		return self:Update()
 	end
 end
+
+function partyWidgetProto:OnUpdate(x, y, distance, elapsed, pixelsPerYard)
+	local visible, important = parentProto.OnUpdate(self, x, y, distance, elapsed, pixelsPerYard)
+	return visible, important or self.TargetRing:IsShown()
+end
+
