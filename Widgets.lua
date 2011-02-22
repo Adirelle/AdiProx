@@ -209,7 +209,7 @@ function iconWidgetProto:SetTexture(texture, blendMode)
 		self.frame:SetTexture(texture)
 	end
 	if blendMode then
-		self.frame:SetBlendMode(blendMode
+		self.frame:SetBlendMode(blendMode)
 	end
 	return self
 end
