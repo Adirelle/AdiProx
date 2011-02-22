@@ -38,8 +38,7 @@ local DEFAULT_SETTINGS = {}
 
 local prefs
 
-local UPDATE_PERIOD_FINE = 1/30
-local UPDATE_PERIOD_COARSE = 1/10
+local UPDATE_PERIOD = 1/30
 
 local ZOOM_GRANULARITY = 30
 addon.MAX_RANGE = ZOOM_GRANULARITY * 4
@@ -190,18 +189,17 @@ local delay = 0
 function addon:OnUpdate(elapsed)
 	delay = delay + elapsed
 	
-	local facing, px, py = GetPlayerFacing(), GetPlayerMapPosition("player")
-	if px == 0 and py == 0 then
-		self.frame:Hide()
-		return
-	elseif delay > UPDATE_PERIOD_COARSE or self.forceUpdate 
-			or (delay > UPDATE_PERIOD_FINE and (px ~= self.playerX or py ~= self.playerY or facing ~= self.playerFacing))
-		then
+	if delay > UPDATE_PERIOD or self.forceUpdate then
 		elapsed, delay = delay, 0
 	else
 		return
 	end
-	self.playerX, self.playerY, self.playerFacing = px, py, facing
+	
+	local facing, px, py = GetPlayerFacing(), GetPlayerMapPosition("player")
+	if px == 0 and py == 0 then
+		self.frame:Hide()
+		return
+	end
 
 	local pixelsPerYard = self.container:GetWidth() / (self.zoomRange * 2)
 	local rotangle = 2 * math.pi - facing
