@@ -77,6 +77,7 @@ end
 function widgetProto:OnAcquire()
 	self.important = false
 	self.alert = false
+	self.expires = nil
 end
 
 function widgetProto:OnRelease()
@@ -102,6 +103,19 @@ end
 function widgetProto:SetImportant(imporant)
 	self.important = important
 	return self
+end
+
+function widgetProto:SetExpires(expires)
+	if expires and expires < GetTime() then
+		self:Release()
+	else
+		self.expires = expires
+	end
+	return self
+end
+
+function widgetProto:SetDuration(duration)
+	return self:SetExpires(duration and GetTime() + duration or nil)
 end
 
 function widgetProto:SetAlert(alert)
@@ -138,6 +152,10 @@ function widgetProto:SetPosition(position)
 end
 
 function widgetProto:OnUpdate(x, y)
+	if self.expires and self.expires < GetTime() then
+		self:Release()
+		return false, false
+	end
 	if x ~= self.x or y ~= self.y then
 		self.x, self.y = x, y
 		self.frame:SetPoint("CENTER", x, y)
