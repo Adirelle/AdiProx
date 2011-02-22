@@ -26,9 +26,6 @@ else
 end
 --@end-alpha@
 
-addon.moduleProto = {Debug = addon.Debug}
-addon:SetDefaultModulePrototype(addon.moduleProto)
-
 --------------------------------------------------------------------------------
 -- Default settings
 --------------------------------------------------------------------------------
@@ -257,5 +254,20 @@ function addon:OnUpdate(elapsed)
 	end
 
 	self.forceUpdate = nil
+end
+
+--------------------------------------------------------------------------------
+-- Module prototype
+--------------------------------------------------------------------------------
+
+local moduleProto = { Debug = addon.Debug }
+addon:SetDefaultModulePrototype(moduleProto)
+addon.moduleProto = moduleProto
+
+function moduleProto:OnDisable()
+	self:ReleaseAllWidgets()
+	if self.PostDisable then
+		self:PostDisable()
+	end
 end
 
