@@ -15,6 +15,7 @@ local activeWidgets = {}
 local registry = {}
 
 function addon.AcquireWidget(owner, typeName, ...)
+	assert(type(typeName) == "string" and registry[typeName], "AcquireWidget: invalid typeName: "..tostring(typeName))
 	local meta = registry[typeName]
 	local heap = meta.__index.heap
 	local widget = next(heap)
