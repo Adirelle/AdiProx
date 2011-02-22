@@ -41,7 +41,7 @@ local classColors
 
 local UPDATE_PERIOD = 1/30
 
-local ZOOM_GRANULARITY = 30
+local ZOOM_GRANULARITY = 25
 addon.MAX_RANGE = ZOOM_GRANULARITY * 4
 
 local LibMapData = LibStub('LibMapData-1.0')
@@ -220,7 +220,6 @@ function addon:OnUpdate(elapsed)
 		if position ~= playerPos then
 			local visible, distance = position:UpdateRelativeCoords(px, py, rotangle)
 			if visible then
-				maxDist = max(maxDist, distance)
 				if TestCondition(distance, playerDist, playerInvert) then
 					position:SetAlert(true)
 					playerAlert = true
@@ -230,6 +229,7 @@ function addon:OnUpdate(elapsed)
 			end
 			if position:UpdateWidgets(elapsed, pixelsPerYard) then
 				showMe = true
+				maxDist = max(maxDist, distance * 1.25)
 			end
 		end
 	end
