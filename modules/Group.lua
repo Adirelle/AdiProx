@@ -7,21 +7,11 @@ All rights reserved.
 local addonName, addon = ...
 local L = addon.L
 
-local classColors
-
 local mod = addon:NewModule('Group', 'AceEvent-3.0')
-
-function mod:OnInitialize()
-	if CUSTOM_CLASS_COLORS then
-		classColors = CUSTOM_CLASS_COLORS
-		classColors:RegisterCallback(function() if self:IsEnabled() then self:Update() end end)
-	else
-		classColors = RAID_CLASS_COLORS
-	end
-end
 
 function mod:OnEnable()
 	self:RegisterMessage('AdiProx_GroupChanged', "Update")
+	self:RegisterMessage('AdiProx_ClassColorsChanged', 'Update')
 	self:Update()
 end
 
@@ -69,8 +59,7 @@ end
 function partyWidgetProto:Update()
 	local unit = self.unit
 	if not unit then return end
-	local _, class = UnitClass(unit)
-	local color = classColors[class]
+	local color = addon:GetUnitColor(unit)
 
 	local name = self.Name
 	name:SetText(UnitName(unit))
