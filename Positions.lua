@@ -40,18 +40,16 @@ local positionProto = { Debug = addon.Debug  }
 local positionMeta = { __index = positionProto }
 
 function positionProto:OnCreate()
-	self:Debug('OnCreate')
 	self.widgets = {}
 end
 
 function positionProto:OnAcquire()
-	self:Debug('OnAcquire')
+	self:Debug('Acquired')
 end
 
 function positionProto:Release()
 	if activePositions[self] then
 		activePositions[self] = nil
-		self:Debug('Release')
 		for name, widget in pairs(self.widgets) do
 			self.widgets[name] = nil
 			widget:SetPosition(nil)
@@ -62,6 +60,7 @@ function positionProto:Release()
 end
 
 function positionProto:OnRelease()
+	self:Debug('Released')
 end
 
 function positionProto:Attach(name, widget)
@@ -160,7 +159,6 @@ local staticPositionMeta = { __index = staticPositionProto }
 function staticPositionProto:OnAcquire(x, y, map, floor)
 	assert(type(x) == "number")
 	assert(type(y) == "number")
-	positionProto.OnAcquire(self)
 	if not map then
 		self.map, self.floor = addon.currentMap, addon.currentFloor
 	else
@@ -168,6 +166,7 @@ function staticPositionProto:OnAcquire(x, y, map, floor)
 	end
 	self.x = x
 	self.y = y
+	positionProto.OnAcquire(self)
 end
 
 function staticPositionProto:Detach(widget)
@@ -177,6 +176,10 @@ function staticPositionProto:Detach(widget)
 		end
 		return true
 	end
+end
+
+function staticPositionProto:GetName()
+	return format('static(%.2f,%.2f,%s,%s)', (self.x or 0), (self.y or 0), tostring(self.map), tostring(self.floor))
 end
 
 function staticPositionProto:GetMapCoords()
@@ -200,14 +203,19 @@ local unitPositionProto = setmetatable({ heap = {} }, positionMeta)
 local unitPositionMeta = { __index = unitPositionProto }
 
 function unitPositionProto:OnAcquire(unit)
-	assert(type(unit) == "string")
-	positionProto.OnAcquire(self)
+	assert(type(unit) == "string", "UnitPosition: invalid unit"..tostring(unit))
 	unitPositions[unit] = self
 	self.unit = unit
+	positionProto.OnAcquire(self)
 end
 
 function unitPositionProto:OnRelease()
 	unitPositions[self.unit] = nil
+	positionProto.OnRelease(self)
+end
+
+function unitPositionProto:GetName()
+	return format("unit(%s)", tostring(self.unit))
 end
 
 function unitPositionProto:GetMapCoords()
