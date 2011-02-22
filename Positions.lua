@@ -118,7 +118,7 @@ function positionProto:UpdateRelativeCoords(playerX, playerY, rotangle)
 		self.distance, dx, dy = LibMapData:Distance(addon.currentMap, addon.currentFloor, playerX, playerY, mapX, mapY)
 		self.relX = (dx * cos(rotangle)) - (-1 * dy * sin(rotangle))
 		self.relY = (dx * sin(rotangle)) + (-1 * dy * cos(rotangle))
-		self.visible = self.distance < 100
+		self.visible = self.distance < addon.MAX_RANGE
 	else
 		self.visible = false
 	end
@@ -212,8 +212,8 @@ end
 
 function unitPositionProto:GetMapCoords()
 	local unit = self.unit
-	if UnitIsVisible(unit) and UnitIsConnected(unit) then
-		local x, y = GetPlayerMapPosition(self.unit)
+	if UnitIsConnected(unit) and UnitInPhase(unit) then
+		local x, y = GetPlayerMapPosition(unit)
 		if x ~= 0 and y ~= 0 then
 			return x, y
 		end

@@ -26,9 +26,6 @@ else
 end
 --@end-alpha@
 
-addon.moduleProto = {Debug = addon.Debug}
-addon:SetDefaultModulePrototype(addon.moduleProto)
-
 --------------------------------------------------------------------------------
 -- Default settings
 --------------------------------------------------------------------------------
@@ -41,8 +38,11 @@ local DEFAULT_SETTINGS = {}
 
 local prefs
 
-local UPDATE_PERIOD = 1/20
-local ZOOM_GRANULARITY = 25
+local UPDATE_PERIOD_FINE = 1/30
+local UPDATE_PERIOD_COARSE = 1/10
+
+local ZOOM_GRANULARITY = 30
+addon.MAX_RANGE = ZOOM_GRANULARITY * 4
 
 local LibMapData = LibStub('LibMapData-1.0')
 
@@ -189,20 +189,22 @@ local log2 = log(2)
 local delay = 0
 function addon:OnUpdate(elapsed)
 	delay = delay + elapsed
-	if delay >= UPDATE_PERIOD or self.forceUpdate then
-		elapsed, delay, self.forceUpdate = delay, 0, nil
-	else
-		return
-	end
-
-	local px, py = GetPlayerMapPosition("player")
+	
+	local facing, px, py = GetPlayerFacing(), GetPlayerMapPosition("player")
 	if px == 0 and py == 0 then
 		self.frame:Hide()
 		return
+	elseif delay > UPDATE_PERIOD_COARSE or self.forceUpdate 
+			or (delay > UPDATE_PERIOD_FINE and (px ~= self.playerX or py ~= self.playerY or facing ~= self.playerFacing))
+		then
+		elapsed, delay = delay, 0
+	else
+		return
 	end
+	self.playerX, self.playerY, self.playerFacing = px, py, facing
 
 	local pixelsPerYard = self.container:GetWidth() / (self.zoomRange * 2)
-	local rotangle = 2 * math.pi - GetPlayerFacing()
+	local rotangle = 2 * math.pi - facing
 	local showMe = false
 	local playerAlert, playerPos = false, self:GetUnitPosition("player")
 	local playerDist, playerInvert = playerPos:GetAlertCondition()
@@ -254,5 +256,21 @@ function addon:OnUpdate(elapsed)
 		self.zoomRange = max(self.zoomRange - elapsed * self.zoomSpeed, newZoom)
 	end
 
+	self.forceUpdate = nil
+end
+
+--------------------------------------------------------------------------------
+-- Module prototype
+--------------------------------------------------------------------------------
+
+local moduleProto = { Debug = addon.Debug }
+addon:SetDefaultModulePrototype(moduleProto)
+addon.moduleProto = moduleProto
+
+function moduleProto:OnDisable()
+	self:ReleaseAllWidgets()
+	if self.PostDisable then
+		self:PostDisable()
+	end
 end
 

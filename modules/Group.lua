@@ -25,10 +25,6 @@ function mod:OnEnable()
 	self:Update()
 end
 
-function mod:OnDisable()
-	self:ReleaseAllWidgets()
-end
-
 function mod:Update()
 	local prefix, size = addon.groupType, addon.groupSize
 	for i = 1, size do

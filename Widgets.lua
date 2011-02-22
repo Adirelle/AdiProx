@@ -77,6 +77,7 @@ end
 function widgetProto:OnAcquire()
 	self.important = false
 	self.alert = false
+	self.expires = nil
 end
 
 function widgetProto:OnRelease()
@@ -86,6 +87,7 @@ end
 function widgetProto:Show()
 	if not self.frame:IsShown() then
 		self.frame:Show()
+		addon.forceUpdate = true
 	end
 	return self
 end
@@ -93,6 +95,7 @@ end
 function widgetProto:Hide()
 	if self.frame:IsShown() then
 		self.frame:Hide()
+		addon.forceUpdate = true
 	end
 	return self
 end
@@ -100,6 +103,19 @@ end
 function widgetProto:SetImportant(imporant)
 	self.important = important
 	return self
+end
+
+function widgetProto:SetExpires(expires)
+	if expires and expires < GetTime() then
+		self:Release()
+	else
+		self.expires = expires
+	end
+	return self
+end
+
+function widgetProto:SetDuration(duration)
+	return self:SetExpires(duration and GetTime() + duration or nil)
 end
 
 function widgetProto:SetAlert(alert)
@@ -124,16 +140,22 @@ function widgetProto:SetPosition(position)
 		if oldPosition then
 			oldPosition:Detach(self)
 		end
-		if not position then
-			self:Hide()
-		end
 		self.x, self.y = nil, nil
 		self:OnPositionChanged()
+		if position then
+			self:Show()
+		else
+			self:Hide()
+		end
 	end
 	return self
 end
 
 function widgetProto:OnUpdate(x, y)
+	if self.expires and self.expires < GetTime() then
+		self:Release()
+		return false, false
+	end
 	if x ~= self.x or y ~= self.y then
 		self.x, self.y = x, y
 		self.frame:SetPoint("CENTER", x, y)
