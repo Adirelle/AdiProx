@@ -29,6 +29,7 @@ libs\LibMovable-1.0\LibMovable-1.0.lua
 AdiProx.lua
 Positions.lua
 Widgets.lua
+Animations.lua
 Options.lua
 Localization.lua
 
