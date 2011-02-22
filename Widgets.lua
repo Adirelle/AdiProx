@@ -76,13 +76,13 @@ function widgetProto:Release()
 end
 
 function widgetProto:OnAcquire()
-	self.important = false
-	self.alert = false
-	self.expires = nil
 end
 
 function widgetProto:OnRelease()
 	self:SetPosition(nil)	
+	self.important = false
+	self.alert = false
+	self.expires = nil
 end
 
 function widgetProto:Show()
