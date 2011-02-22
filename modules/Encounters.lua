@@ -20,6 +20,7 @@ end
 
 function mod:PostDisable()
 	LibMapData.UnregisterAllCallbacks(self)
+	wipe(self.eventRegistry)
 end
 
 local bossIDs = {}
@@ -81,3 +82,36 @@ end
 
 mod:SetDefaultModulePrototype(moduleProto)
 mod:SetDefaultModuleState(false)
+
+function moduleProto:OnDisable()
+	addon.moduleProto.OnDisable(self)
+	self:UnregisterAllCombatLogEvents()
+end
+
+--------------------------------------------------------------------------------
+-- Combat listening
+--------------------------------------------------------------------------------
+
+mod.callbacks = LibStub('CallbackHandler-1.0'):New(moduleProto, "RegisterCombatLogEvent", "UnregisterCombatLogEvent", "UnregisterAllCombatLogEvents")
+
+mod.eventRegistry = {}
+
+function mod.callbacks:OnUsed(_, event)
+	if not next(mod.eventRegistry) then
+		mod:RegisterEvent('COMBAT_LOG_EVENT_UNFILTERED')
+	end
+	mod.eventRegistry[event] = true
+end
+
+function mod.callbacks:OnOnused(_, event)
+	mod.eventRegistry[event] = nil
+	if not next(mod.eventRegistry) then
+		mod:UnregisterEvent('COMBAT_LOG_EVENT_UNFILTERED')
+	end
+end
+
+function mod:COMBAT_LOG_EVENT_UNFILTERED(_, _, event, ...)
+	if self.eventRegistry[event] then
+		mod.callbacks:Fire(event, ...)
+	end
+end
