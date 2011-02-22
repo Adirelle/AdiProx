@@ -215,6 +215,7 @@ function addon:OnUpdate(elapsed)
 	local playerAlert, playerPos = false, self:GetUnitPosition("player")
 	local playerDist, playerInvert = playerPos:GetAlertCondition()
 
+	local now = GetTime()
 	local maxDist = ZOOM_GRANULARITY
 	for position in self:IterateActivePositions() do
 		if position ~= playerPos then
@@ -227,14 +228,14 @@ function addon:OnUpdate(elapsed)
 					position:SetAlert(TestCondition(distance, position:GetAlertCondition()))
 				end
 			end
-			if position:UpdateWidgets(elapsed, pixelsPerYard) then
+			if position:UpdateWidgets(pixelsPerYard, now) then
 				showMe = true
 				maxDist = max(maxDist, distance * 1.25)
 			end
 		end
 	end
 	playerPos:SetAlert(playerAlert)
-	if playerPos:UpdateWidgets(elapsed, pixelsPerYard) then
+	if playerPos:UpdateWidgets(pixelsPerYard, now) then
 		showMe = true
 	end
 	

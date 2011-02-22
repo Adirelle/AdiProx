@@ -117,36 +117,32 @@ function positionProto:UpdateRelativeCoords(playerX, playerY, rotangle)
 		self.distance, dx, dy = LibMapData:Distance(addon.currentMap, addon.currentFloor, playerX, playerY, mapX, mapY)
 		self.relX = (dx * cos(rotangle)) - (-1 * dy * sin(rotangle))
 		self.relY = (dx * sin(rotangle)) + (-1 * dy * cos(rotangle))
-		self.visible = self.distance < addon.MAX_RANGE
+		self.visible = true
 	else
 		self.visible = false
 	end
 	return self.visible, self.distance
 end
 
-function positionProto:UpdateWidgets(elapsed, pixelsPerYard)
-	local showMe = false
-	if self.visible then
-		local alert, distance = self.alert, self.distance
-		local x, y = self.relX * pixelsPerYard, self.relY * pixelsPerYard
-		for name, widget in pairs(self.widgets) do
-			widget:SetAlert(alert)
-			local show, important = widget:OnUpdate(x, y, distance, elapsed, pixelsPerYard)
-			if show then
-				if important then
-					showMe = true
-				end
-				widget:Show()
-			else
-				widget:Hide()
-			end
+function positionProto:UpdateWidgets(pixelsPerYard, now)
+	local inAlert, hasImportant = self.alert, false
+	for name, widget in pairs(self.widgets) do
+		widget:SetAlert(inAlert)
+		widget:OnUpdate(now)
+		if widget:IsImportant() then
+			hasImportant = true
 		end
-	else
-		for name, widget in pairs(self.widgets) do
+	end
+	local isVisible, distance, x, y = self.visible, self.distance, self.relX * pixelsPerYard, self.relY * pixelsPerYard
+	for name, widget in pairs(self.widgets) do
+		if isVisible and widget:ShouldBeShown() then
+			widget:Show()
+			widget:SetPoint(x, y, pixelsPerYard, distance)
+		else
 			widget:Hide()
 		end
 	end
-	return showMe
+	return hasImportant
 end
 
 --------------------------------------------------------------------------------
@@ -267,12 +263,16 @@ setmetatable(unitPositions, { __index = function(t, unit)
 	return position
 end})
 
+function addon.GetGUIDUnit(guid)
+	return guid and guidToUnit[guid]
+end
+
 function addon.GetNormalizedUnit(unit)
 	return guidToUnit[unit and UnitGUID(unit)]
 end
 
 function addon:GetUnitPosition(unit)
-	return unitPositions[guidToUnit[unit and UnitGUID(unit)]]
+	return unitPositions[guidToUnit[unit and UnitGUID(unit) or unit]]
 end
 
 function addon:PARTY_MEMBERS_CHANGED()

@@ -119,8 +119,10 @@ end
 function partyWidgetProto:PLAYER_TARGET_CHANGED()
 	if self.unit and UnitIsUnit(self.unit, "target") then
 		self.TargetRing:Show()
+		self:SetImportant(true)
 	else
 		self.TargetRing:Hide()
+		self:SetImportant(false)
 	end
 end
 
@@ -128,10 +130,5 @@ function partyWidgetProto:OnUnitEvent(event, unit)
 	if unit == self.unit then
 		return self:Update()
 	end
-end
-
-function partyWidgetProto:OnUpdate(x, y, distance, elapsed, pixelsPerYard)
-	local visible, important = parentProto.OnUpdate(self, x, y, distance, elapsed, pixelsPerYard)
-	return visible, important or self.TargetRing:IsShown()
 end
 

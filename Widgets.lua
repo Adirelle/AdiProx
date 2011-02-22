@@ -102,8 +102,19 @@ function widgetProto:Hide()
 end
 
 function widgetProto:SetImportant(imporant)
-	self.important = important
+	if self.important ~= important then
+		self.important = important
+		addon.forceUpdate = true
+	end
 	return self
+end
+
+function widgetProto:IsImportant()
+	return self.important or self.alert
+end
+
+function widgetProto:ShouldBeShown()
+	return activeWidgets[self]
 end
 
 function widgetProto:SetExpires(expires)
@@ -152,16 +163,17 @@ function widgetProto:SetPosition(position)
 	return self
 end
 
-function widgetProto:OnUpdate(x, y)
-	if self.expires and self.expires < GetTime() then
+function widgetProto:OnUpdate(now)
+	if self.expires and self.expires < now then
 		self:Release()
-		return false, false
 	end
+end
+
+function widgetProto:SetPoint(x, y, pixelsPerYard, distance)
 	if x ~= self.x or y ~= self.y then
 		self.x, self.y = x, y
 		self.frame:SetPoint("CENTER", x, y)
 	end
-	return true, self.alert or self.important
 end
 
 --------------------------------------------------------------------------------
@@ -256,20 +268,30 @@ local rangeWidgetProto = NewWidgetType('range', 'icon')
 function rangeWidgetProto:OnAcquire(texture, radius, radiusModifier, r, g, b, a, blendMode)
 	iconWidgetProto.OnAcquire(self, texture, nil, r, g, b, a, blendMode)
 	self.radius, self.radiusModifier = radius or 16, radiusModifier or 1
+	self.pixelsPerYard = nil
 end
 
 function rangeWidgetProto:SetRadius(radius)
-	self.radius = radius
+	if self.radius ~= radius then
+		self.radius = radius
+		addon.forceUpdate = true
+	end
 	return self
 end
 
 function rangeWidgetProto:SetRadiusModifier(radiusModifier)
-	self.radiusModifier = radiusModifier
+	if self.radiusModifier ~= radiusModifier then
+		self.radiusModifier = radiusModifier
+		addon.forceUpdate = true
+	end
 	return self
 end
 
-function rangeWidgetProto:OnUpdate(uiRelX, uiRelY, distance, elapsed, pixelsPerYard)
-	self:SetSize(2 * self.radius * pixelsPerYard * self.radiusModifier)
-	return iconWidgetProto.OnUpdate(self, uiRelX, uiRelY, distance, elapsed, pixelsPerYard)
+function widgetProto:SetPoint(x, y, pixelsPerYard, distance)
+	widgetProto.SetPoint(self, x, y, pixelsPerYard, distance)
+	if pixelsPerYard ~= self.pixelsPerYard then
+		self.pixelsPerYard = pixelsPerYard
+		self:SetSize(2 * self.radius * pixelsPerYard * self.radiusModifier)
+	end
 end
 
