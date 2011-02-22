@@ -46,7 +46,8 @@ function partyWidgetProto:CreateFrame(parent)
 	local targetRing = frame:CreateTexture(nil, "OVERLAY")
 	targetRing:SetTexture([[Interface\Cooldown\ping4]])
 	targetRing:SetPoint("CENTER")
-	targetRing:SetSize(32, 32)
+	targetRing:SetSize(16, 16)
+	targetRing:SetBlendMode("ADD")
 	self.TargetRing = targetRing
 
 	local name = frame:CreateFontString(nil, "ARTWORK", "SystemFont_Shadow_Small")
