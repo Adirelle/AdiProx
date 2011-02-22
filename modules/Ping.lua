@@ -9,6 +9,8 @@ local L = addon.L
 
 local mod = addon:NewModule('Ping', 'AceEvent-3.0')
 
+local LibMapData = LibStub('LibMapData-1.0')
+
 function mod:OnEnable()
 	self:RegisterEvent('MINIMAP_PING')
 	self:RegisterEvent('MINIMAP_UPDATE_ZOOM')
@@ -58,7 +60,9 @@ function mod:MINIMAP_PING(event, sender, dx, dy)
 	if self.widget then
 		self.widget:Release()
 	end
-	self:AcquireWidget(px + dx * diameter, py + dy * diameter, sender)
+	
+	local mx, my = LibMapData:YardsToPoint(addon.currentMap, addon.currentFloor, dx * diameter, dy * diameter)	
+	self:AcquireWidget("minimap_ping", px + mx, py - my, sender)
 end
 
 --------------------------------------------------------------------------------
@@ -71,14 +75,8 @@ function pingWidgetProto:CreateFrame(parent)
 	local frame = CreateFrame("Frame", nil, parent)
 	frame:SetSize(16, 16)
 
-	local icon = frame:CreateTexture(nil, "ARTWORK")
-	icon:SetPoint("CENTER")
-	icon:SetSize(25, 25)
-	icon:SetTexture([[Interface\Minimap\Ping\ping5]])
-	icon:SetBlendMode("ADD")
-
 	local name = frame:CreateFontString(nil, "ARTWORK", "SystemFont_Shadow_Small")
-	name:SetPoint("BOTTOM", icon, "CENTER", 0, 8)
+	name:SetPoint("BOTTOM", frame, "CENTER", 0, 8)
 	self.Name = name
 
 	return frame
@@ -87,13 +85,26 @@ end
 function pingWidgetProto:OnAcquire(x, y, sender)
 	parentProto.OnAcquire(self)
 	mod.widget = self
-	self.Name:SetText(sender)
-	self:SetImportant(true):SetDuration(5.5)
+	
+	local name, color = UnitName(sender), addon:GetUnitColor(sender)
+	self.Name:SetText(name)
+	if color then
+		self.Name:SetTextColor(color.r, color.g, color.b)
+	else
+		self.Name:SetTextColor(1, 1, 1)
+	end
+	
+	self:SetImportant(true):SetDuration(5)
 	addon:GetStaticPosition(x, y):Attach("ping", self)
+	
+	self.Icon1 = addon:AcquireAnimation(self.frame, [[Interface\Minimap\Ping\ping5]], 16, 1, 1, 1, 1, "ADD"):Rotate(-360, 2)
+	self.Icon2 = addon:AcquireAnimation(self.frame, [[Interface\Minimap\Ping\ping2]], 12, 1, 1, 1, 1, "ADD"):Pulse(1.5, 1)
 end
 
 function pingWidgetProto:OnRelease()
 	parentProto.OnRelease(self)
+	self.Icon1:Release()
+	self.Icon2:Release()
 	mod.widget = nil
 end
 
