@@ -187,11 +187,20 @@ function iconWidgetProto:OnCreate()
 	self.alertColor = { 1, 1, 1 }
 end
 
-function iconWidgetProto:OnAcquire()
+function iconWidgetProto:OnAcquire(texture, size, r, g, b, a, blendMode)
 	widgetProto.OnAcquire(self)
-	SetColor(self.color, 1, 1, 1, 1)
+	if texture then
+		self:SetTexture(texture, blendMode or "BLEND")
+	end
+	if size then
+		self:SetSize(size)
+	end
+	if r and g and b and a then
+		SetColor(self.color, r, g, b, a)
+	else
+		SetColor(self.color, 1, 1, 1, 1)
+	end
 	SetColor(self.alertColor, 1, 0, 0)
-	self.frame:SetBlendMode("BLEND")
 end
 
 function iconWidgetProto:SetTexture(texture, blendMode)
@@ -200,7 +209,7 @@ function iconWidgetProto:SetTexture(texture, blendMode)
 		self.frame:SetTexture(texture)
 	end
 	if blendMode then
-		self.frame:SetBlendMode(blendMode)
+		self.frame:SetBlendMode(blendMode
 	end
 	return self
 end
@@ -244,9 +253,9 @@ end
 
 local rangeWidgetProto = NewWidgetType('range', 'icon')
 
-function rangeWidgetProto:OnAcquire()
-	iconWidgetProto.OnAcquire(self)
-	self.radius, self.radiusModifier = 16, 1
+function rangeWidgetProto:OnAcquire(texture, radius, radiusModifier, r, g, b, a, blendMode)
+	iconWidgetProto.OnAcquire(self, texture, nil, r, g, b, a, blendMode)
+	self.radius, self.radiusModifier = radius or 16, radiusModifier or 1
 end
 
 function rangeWidgetProto:SetRadius(radius)

@@ -99,7 +99,7 @@ function addon:OnEnable()
 
 	local player = self:GetUnitPosition("player")
 	if not player:GetWidget('arrow') then
-		local playerArrow = self:AcquireWidget("range"):SetRadius(2):SetRadiusModifier(2):SetTexture([[Interface\Minimap\MinimapArrow]])
+		local playerArrow = self:AcquireWidget("icon", [[Interface\Minimap\MinimapArrow]], 32)
 		player:Attach("arrow", playerArrow)
 	end
 
@@ -110,7 +110,7 @@ function aptest()
 	if px ~= 0 and py ~= 0 then
 		local pos = addon:GetStaticPosition(px, py)
 		pos:SetAlertCondition(5)
-		local mark = addon:AcquireWidget("range"):SetRadius(5):SetTexture([[Interface\Cooldown\ping4]], "ADD"):SetRadiusModifier(1.1)
+		local mark = addon:AcquireWidget("range", [[Interface\Cooldown\ping4]], 5, 1, 1, 1, 1, "ADD")
 		pos:Attach("mark", mark)
 	end
 end
