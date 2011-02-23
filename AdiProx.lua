@@ -42,7 +42,7 @@ local classColors
 local UPDATE_PERIOD = 1/30
 
 local ZOOM_GRANULARITY = 25
-addon.MAX_RANGE = ZOOM_GRANULARITY * 4
+local MAX_ZOOM = ZOOM_GRANULARITY * 4
 
 local LibMapData = LibStub('LibMapData-1.0')
 
@@ -253,7 +253,7 @@ function addon:OnUpdate(elapsed)
 	end
 	
 	--local newZoom = ZOOM_GRANULARITY * ceil(maxDist / ZOOM_GRANULARITY)
-	local newZoom = ZOOM_GRANULARITY * pow(2, ceil(log(maxDist / ZOOM_GRANULARITY) / log2))
+	local newZoom = ZOOM_GRANULARITY * pow(2, ceil(log(min(maxDist, MAX_ZOOM) / ZOOM_GRANULARITY) / log2))
 	if newZoom ~= self.targetZoom then
 		self.zoomSpeed = max(newZoom, self.targetZoom or 0) / 0.5
 		self.targetZoom = newZoom
