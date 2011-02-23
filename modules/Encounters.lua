@@ -15,7 +15,7 @@ function mod:OnEnable()
 	self:RegisterEvent('PLAYER_ENTERING_WORLD', 'UpdateModules')
 	self:RegisterEvent('INSTANCE_ENCOUNTER_ENGAGE_UNIT', 'UpdateModules')
 	LibMapData.RegisterCallback(self, 'MapChanged', 'UpdateModules')
-	self:UpdateModules()
+	self:UpdateModules("OnEnable")
 end
 
 function mod:PostDisable()
@@ -27,7 +27,8 @@ function addon:NewEncounterModule(...)
 end
 
 local bossIDs = {}
-function mod:UpdateModules()
+function mod:UpdateModules(event)
+	self:Debug('UpdateModules', event)
 
 	-- Fetch boss IDS from boss units, if any
 	wipe(bossIDs)
@@ -47,8 +48,9 @@ function mod:UpdateModules()
 		-- Check map-related modules
 		if module.maps then
 			local map = GetMapInfo()
-			for i, zone in pairs(module.zones) do
+			for i, zone in pairs(module.maps) do
 				if zone == map then
+					self:Debug('Module', module, 'enabled in', zone)
 					enable = true
 					break
 				end
@@ -59,6 +61,7 @@ function mod:UpdateModules()
 		if not enabled and hasBoss and module.bosses then
 			for i, mob in pairs(module.bosses) do
 				if bossIDs[mob] then				
+					self:Debug('Module', module, 'enabled for', bossIDs[mob])
 					enable = true
 					break
 				end
@@ -66,9 +69,11 @@ function mod:UpdateModules()
 		end
 		
 		-- Enable/disable as needed
-		if enable and not module:IsEnabled() then
-			module:Enable()
-		elseif not enable and module:IsEnabled() then
+		if enable then
+			if not module:IsEnabled() then
+				module:Enable()
+			end
+		elseif module:IsEnabled() then
 			module:Disable()
 		end
 	end
@@ -88,8 +93,8 @@ mod:SetDefaultModuleState(false)
 mod:SetDefaultModuleLibraries('AceEvent-3.0')
 
 function moduleProto:OnDisable()
-	addon.moduleProto.OnDisable(self)
 	self:UnregisterAllCombatLogEvents()
+	addon.moduleProto.OnDisable(self)
 end
 
 --------------------------------------------------------------------------------
@@ -108,7 +113,7 @@ function callbacks:OnUsed(_, event)
 	eventRegistry[event] = true
 end
 
-function callbacks:OnOnused(_, event)
+function callbacks:OnUnused(_, event)
 	eventRegistry[event] = nil
 	if not next(eventRegistry) then
 		mod:UnregisterEvent('COMBAT_LOG_EVENT_UNFILTERED')
@@ -178,8 +183,8 @@ do
 		local args = "event,sourceGUID,sourceName,sourceFlags,destGUID,destName,destFlags"
 		for prefix, prefixArgs in pairs(prefixes) do
 			local len = strlen(prefix)
-			if substr(event, 1, len) == prefix then
-				local suffixArgs = suffixes[substr(event, len + 2)]
+			if strsub(event, 1, len) == prefix then
+				local suffixArgs = suffixes[strsub(event, len + 2)]
 				if suffixArgs then
 					args = args..prefixArgs..suffixArgs
 					break
