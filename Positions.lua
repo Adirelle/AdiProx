@@ -79,10 +79,10 @@ end
 
 function positionProto:Detach(widget)
 	for name, w in pairs(self.widgets) do
-		if w == widget then
+		if name == widget or w == widget then
 			self.widgets[name] = nil
 			widget:SetPosition(nil)
-			return true
+			return w, name
 		end
 	end
 end
@@ -97,6 +97,7 @@ end
 
 function positionProto:SetAlertCondition(distance, invert)
 	self.alertDistance, self.alertInvert = distance, invert
+	return self
 end
 
 function positionProto:GetAlertCondition()
@@ -110,6 +111,7 @@ function positionProto:SetAlert(alert)
 			widget:SetAlert(alert)
 		end
 	end
+	return self
 end
 
 local cos, sin, max, abs = math.cos, math.sin, math.max, math.abs
