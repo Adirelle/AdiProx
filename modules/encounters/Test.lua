@@ -22,7 +22,7 @@ function mod:SPELL_AURA_APPLIED(_, event)
 	if event.spellId == 33763 then
 		local pos = addon:GetUnitPosition(event.destGUID)
 		if pos and not pos:GetWidget("lifebloom") then
-			pos:Attach("lifebloom", self:AcquireWidget("range", [[SPELLS\CIRCLE]], 5, 1, 0, 1, 0))
+			pos:Attach("lifebloom", self:AcquireWidget("range", [[SPELLS\CIRCLE]], 5, 1, 0, 1, 0, 1, "ADD"))
 		end
 	end
 end
@@ -40,8 +40,9 @@ end
 function mod:SPELL_CAST_SUCCESS(_, event)
 	if event.spellId == 18562 then
 		local pos = addon:GetUnitPosition(event.destGUID)
-		if pos and not pos:GetWidget("swiftmend") then
-			pos:Attach("swiftmend", self:AcquireWidget("range", [[SPELLS\WHITERINGTHIN128]], 10, 1, 0, 1, 0, 1, "ADD")):SetDuration(7)
+		if pos then
+			local widget = self:AcquireWidget("range", [[SPELLS\WHITERINGTHIN128]], 9, 1, 0, 1, 0, 1, "ADD"):SetDuration(7.5)		
+			pos:GetStaticPosition():Attach("swiftmend", widget)
 		end
 	end
 end
