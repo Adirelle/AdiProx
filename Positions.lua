@@ -109,19 +109,25 @@ function positionProto:SetAlert(alert)
 	end
 end
 
-local cos, sin = math.cos, math.sin, math.sqrt
-function positionProto:UpdateRelativeCoords(playerX, playerY, rotangle)
+local cos, sin, max, abs = math.cos, math.sin, math.max, math.abs
+function positionProto:UpdateRelativeCoords(playerX, playerY, rotangle, maxZoomRange)
+	local state, distance, zoomRange, relX, relY = "invalid"
 	local mapX, mapY = self:GetMapCoords()
 	if mapX and mapY then
 		local dx, dy
-		self.distance, dx, dy = LibMapData:Distance(addon.currentMap, addon.currentFloor, playerX, playerY, mapX, mapY)
-		self.relX = (dx * cos(rotangle)) - (-1 * dy * sin(rotangle))
-		self.relY = (dx * sin(rotangle)) + (-1 * dy * cos(rotangle))
-		self.visible = true
-	else
-		self.visible = false
+		distance, dx, dy = LibMapData:Distance(addon.currentMap, addon.currentFloor, playerX, playerY, mapX, mapY)
+		relX = (dx * cos(rotangle)) - (-1 * dy * sin(rotangle))
+		relY = (dx * sin(rotangle)) + (-1 * dy * cos(rotangle))
+		zoomRange = max(abs(relX), abs(relY))
+		if zoomRange <= maxZoomRange then
+			state = "in_range"
+		else
+			local f = maxZoomRange / zoomRange
+			state, relX, relY = "on_edge", relX * f, relY * f			
+		end
 	end
-	return self.visible, self.distance, self.relX, self.relY
+	self.state, self.distance, self.zoomRange, self.relX, self.relY = state, distance, zoomRange, relX, relY
+	return state, distance, zoomRange
 end
 
 function positionProto:UpdateWidgets(pixelsPerYard, now)
@@ -133,7 +139,11 @@ function positionProto:UpdateWidgets(pixelsPerYard, now)
 			hasImportant = true
 		end
 	end
-	if self.visible then
+	if self.state == "invalid" or self.state == "on_edge" and not hasImportant then
+		for name, widget in pairs(self.widgets) do
+			widget:Hide()
+		end
+	else
 		local distance, x, y = self.distance, self.relX * pixelsPerYard, self.relY * pixelsPerYard
 		for name, widget in pairs(self.widgets) do
 			if widget:ShouldBeShown() then
@@ -143,12 +153,8 @@ function positionProto:UpdateWidgets(pixelsPerYard, now)
 				widget:Hide()
 			end
 		end
-	else
-		for name, widget in pairs(self.widgets) do
-			widget:Hide()
-		end
+		return hasImportant
 	end
-	return hasImportant
 end
 
 --------------------------------------------------------------------------------

@@ -214,13 +214,14 @@ function addon:OnUpdate(elapsed)
 	local showMe = false
 	local playerAlert, playerPos = false, self:GetUnitPosition("player")
 	local playerDist, playerInvert = playerPos:GetAlertCondition()
+	local zoomRange = self.zoomRange
 
 	local now = GetTime()
 	local maxDist = ZOOM_GRANULARITY
 	for position in self:IterateActivePositions() do
 		if position ~= playerPos then
-			local visible, distance, relX, relY = position:UpdateRelativeCoords(px, py, rotangle)
-			if visible then
+			local state, distance, range = position:UpdateRelativeCoords(px, py, rotangle, zoomRange)
+			if state ~= "invalid" then
 				if TestCondition(distance, playerDist, playerInvert) then
 					position:SetAlert(true)
 					playerAlert = true
@@ -230,7 +231,7 @@ function addon:OnUpdate(elapsed)
 			end
 			if position:UpdateWidgets(pixelsPerYard, now) then
 				showMe = true
-				maxDist = max(maxDist, relX * 1.25, relY * 1.25)
+				maxDist = max(maxDist, range * 1.25)
 			end
 		end
 	end
