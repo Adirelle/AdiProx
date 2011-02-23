@@ -100,7 +100,6 @@ end
 function widgetProto:Hide()
 	if self.frame:IsShown() then
 		self.frame:Hide()
-		addon.forceUpdate = true
 	end
 	return self
 end
@@ -140,6 +139,7 @@ function widgetProto:SetAlert(alert)
 	alert = not not alert
 	if alert ~= self.alert then
 		self.alert = alert
+		addon.forceUpdate = true
 		self:OnAlertChanged()
 	end
 	return self
