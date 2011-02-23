@@ -87,7 +87,7 @@ function callbacks:OnUnused(_, event)
 end
 
 -- Dispatch the combat log event
-lib.eventFrame:SetScript('OnEvent', function(_, _, event, ...)
+lib.eventFrame:SetScript('OnEvent', function(_, _, _, event, ...)
 	if registeredEvents[event] then
 		callbacks:Fire(event, fillersByEvent[event](evt, event, ...))
 	end
