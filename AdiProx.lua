@@ -219,7 +219,7 @@ function addon:OnUpdate(elapsed)
 	local maxDist = ZOOM_GRANULARITY
 	for position in self:IterateActivePositions() do
 		if position ~= playerPos then
-			local visible, distance = position:UpdateRelativeCoords(px, py, rotangle)
+			local visible, distance, relX, relY = position:UpdateRelativeCoords(px, py, rotangle)
 			if visible then
 				if TestCondition(distance, playerDist, playerInvert) then
 					position:SetAlert(true)
@@ -230,7 +230,7 @@ function addon:OnUpdate(elapsed)
 			end
 			if position:UpdateWidgets(pixelsPerYard, now) then
 				showMe = true
-				maxDist = max(maxDist, distance * 1.25)
+				maxDist = max(maxDist, relX * 1.25, relY * 1.25)
 			end
 		end
 	end
@@ -239,7 +239,7 @@ function addon:OnUpdate(elapsed)
 		showMe = true
 	end
 	
-	if showMe or true then
+	if showMe or IsShiftKeyDown() then
 		self.frame:Show()
 		if self.zoomRange ~= self.tickRange then
 			for tick in pairs(self.zoomTicks) do

@@ -121,7 +121,7 @@ function positionProto:UpdateRelativeCoords(playerX, playerY, rotangle)
 	else
 		self.visible = false
 	end
-	return self.visible, self.distance
+	return self.visible, self.distance, self.relX, self.relY
 end
 
 function positionProto:UpdateWidgets(pixelsPerYard, now)
@@ -133,12 +133,18 @@ function positionProto:UpdateWidgets(pixelsPerYard, now)
 			hasImportant = true
 		end
 	end
-	local isVisible, distance, x, y = self.visible, self.distance, self.relX * pixelsPerYard, self.relY * pixelsPerYard
-	for name, widget in pairs(self.widgets) do
-		if isVisible and widget:ShouldBeShown() then
-			widget:Show()
-			widget:SetPoint(x, y, pixelsPerYard, distance)
-		else
+	if self.visible then
+		local distance, x, y = self.distance, self.relX * pixelsPerYard, self.relY * pixelsPerYard
+		for name, widget in pairs(self.widgets) do
+			if widget:ShouldBeShown() then
+				widget:Show()
+				widget:SetPoint(x, y, pixelsPerYard, distance)
+			else
+				widget:Hide()
+			end
+		end
+	else
+		for name, widget in pairs(self.widgets) do
 			widget:Hide()
 		end
 	end
