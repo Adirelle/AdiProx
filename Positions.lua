@@ -166,15 +166,20 @@ function positionProto:LayoutWidgets(zoomRange, pixelsPerYard)
 		end
 	end
 	if x and y then	
+		local showImportant
 		local distance = self.distance
 		for name, widget in pairs(self.widgets) do
-			if widget:ShouldBeShown() then
+			if widget:ShouldBeShown(onEdge) then
 				widget:Show()
 				widget:SetPoint(x, y, pixelsPerYard, distance, zoomRange, onEdge)
+				if widget:IsImportant() then
+					showImportant = true
+				end
 			else
 				widget:Hide()
 			end
 		end
+		return showImportant
 	else
 		for name, widget in pairs(self.widgets) do
 			widget:Hide()

@@ -240,11 +240,20 @@ function addon:OnUpdate(elapsed)
 	local pixelsPerYard = (self.container:GetWidth() - 16) / (actualZoom * 2)
 	
 	-- Layout widgets
+	showMe = false
 	for position in self:IterateActivePositions() do
-		position:LayoutWidgets(actualZoom, pixelsPerYard)
+		if position:LayoutWidgets(actualZoom, pixelsPerYard) then
+			showMe = true
+		end
 	end
 	
-	self.frame:Show()
+	if showMe or IsShiftKeyDown() then
+		-- Really show the frame
+		self.frame:Show()
+	else
+		-- Finally, we don't display anything useful
+		self.frame:Hide()
+	end
 	self.forceUpdate = nil
 end
 
