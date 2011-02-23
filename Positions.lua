@@ -254,7 +254,7 @@ local guidToUnit = {}
 
 setmetatable(unitPositions, { __index = function(t, unit)
 	if unit then
-		local position = AcquirePosition(unit == "player" and playerPositionMeta or unitPositionMeta, "player")
+		local position = AcquirePosition(unit == "player" and playerPositionMeta or unitPositionMeta, unit)
 		t[unit] = position
 		return position
 	end
