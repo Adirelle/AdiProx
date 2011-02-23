@@ -19,7 +19,6 @@ function mod:OnEnable()
 end
 
 function mod:SPELL_AURA_APPLIED(_, event)
-	self:Debug('SPELL_AURA_APPLIED', _, event)
 	if event.spellId == 33763 then
 		local pos = addon:GetUnitPosition(event.destGUID)
 		if pos and not pos:GetWidget("lifebloom") then

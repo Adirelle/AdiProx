@@ -26,6 +26,11 @@ function proto:CreateFrame(parent)
 	arrow:SetTexture([[Interface\Minimap\MinimapArrow]])
 	arrow:SetSize(32, 32)
 	arrow:SetPoint("CENTER")
+	
+	local text = frame:CreateFontString(nil, "ARTWORK", "SystemFont_Shadow_Small")
+	text:SetTextColor(0.7, 0.7, 0.7, 0.5)
+	text:SetPoint("BOTTOMRIGHT")
+	self.Text = text
 
 	self.ticks = {}
 	for i, v in ipairs{{1,0}, {0,1}, {-1, 0}, {0, -1}} do
@@ -47,12 +52,13 @@ function proto:CreateFrame(parent)
 	return frame
 end
 
-function proto:SetPoint(x, y, pixelsPerYard, distance)	
+function proto:SetPoint(x, y, pixelsPerYard, distance, zoomRange)	
 	if pixelsPerYard ~= self.pixelsPerYard then
 		self.pixelsPerYard = pixelsPerYard
 		for tick in pairs(self.ticks) do
 			tick:SetPoint("CENTER", tick.x * pixelsPerYard, tick.y * pixelsPerYard)
 		end
 	end
+	self.Text:SetFormattedText("%dm", ceil(zoomRange))
 end
 
