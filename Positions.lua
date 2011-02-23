@@ -104,6 +104,16 @@ function positionProto:GetAlertCondition()
 	return self.alertDistance, self.alertInvert
 end
 
+function positionProto:TestAlert(distance)
+	if distance and self.alertDistance then
+		if self.alertInvert then
+			return distance > self.alertDistance
+		else
+			return distance <= self.alertDistance
+		end
+	end
+end
+
 function positionProto:SetAlert(alert)
 	if alert ~= self.alert then
 		self.alert = alert
@@ -115,49 +125,59 @@ function positionProto:SetAlert(alert)
 end
 
 local cos, sin, max, abs = math.cos, math.sin, math.max, math.abs
-function positionProto:UpdateRelativeCoords(playerX, playerY, rotangle, maxZoomRange)
-	local state, distance, zoomRange, relX, relY = "invalid"
+function positionProto:UpdateRelativeCoords(playerX, playerY, rotangle)
+	local isValid, distance, zoomRange, relX, relY = false
 	local mapX, mapY = self:GetMapCoords()
-	if mapX and mapY then
+	if mapX and mapY then	
 		local dx, dy
 		distance, dx, dy = LibMapData:Distance(addon.currentMap, addon.currentFloor, playerX, playerY, mapX, mapY)
+		isValid = true
 		relX = (dx * cos(rotangle)) - (-1 * dy * sin(rotangle))
 		relY = (dx * sin(rotangle)) + (-1 * dy * cos(rotangle))
 		zoomRange = max(abs(relX), abs(relY))
-		if zoomRange <= maxZoomRange then
-			state = "in_range"
-		else
-			local f = maxZoomRange / zoomRange
-			state, relX, relY = "on_edge", relX * f, relY * f			
-		end
 	end
-	self.state, self.distance, self.zoomRange, self.relX, self.relY = state, distance, zoomRange, relX, relY
-	return state, distance, zoomRange
+	self.isValid, self.distance, self.zoomRange, self.relX, self.relY = isValid, distance, zoomRange, relX, relY
+	return isValid, distance, zoomRange
 end
 
-function positionProto:UpdateWidgets(pixelsPerYard, now)
-	local hasImportant = false
-	for name, widget in pairs(self.widgets) do
-		widget:OnUpdate(now)
-		if widget:IsImportant() then
-			hasImportant = true
+function positionProto:IsImportant()
+	local important = false
+	if self.isValid then
+		for name, widget in pairs(self.widgets) do
+			if widget:IsImportant() then
+				important = true
+				break
+			end
 		end
 	end
-	if self.state == "invalid" or self.state == "on_edge" and not hasImportant then
-		for name, widget in pairs(self.widgets) do
-			widget:Hide()
+	self.important = important
+	return important
+end
+
+function positionProto:LayoutWidgets(zoomRange, pixelsPerYard)
+	local x, y
+	if self.isValid then
+		if self.zoomRange <= zoomRange then
+			x, y = self.relX * pixelsPerYard, self.relY * pixelsPerYard
+		elseif self.important then
+			local f = zoomRange / self.zoomRange
+			x, y = self.relX * f * pixelsPerYard, self.relY * f * pixelsPerYard
 		end
-	else
-		local distance, x, y = self.distance, self.relX * pixelsPerYard, self.relY * pixelsPerYard
+	end
+	if x and y then	
+		local distance = self.distance
 		for name, widget in pairs(self.widgets) do
 			if widget:ShouldBeShown() then
 				widget:Show()
-				widget:SetPoint(x, y, pixelsPerYard, distance)
+				widget:SetPoint(x, y, pixelsPerYard, distance, zoomRange)
 			else
 				widget:Hide()
 			end
 		end
-		return hasImportant
+	else
+		for name, widget in pairs(self.widgets) do
+			widget:Hide()
+		end
 	end
 end
 
@@ -253,11 +273,29 @@ local playerPositionMeta = { __index = playerPositionProto }
 
 function playerPositionProto:OnAcquire()
 	unitPositionProto.OnAcquire(self, "player")
-	self.visible, self.distance, self.relX, self.relY = true, 0, 0, 0
+	self.isValid, self.distance, self.relX, self.relY, self.zoomRange = true, 0, 0, 0, 0
 end
 
-function playerPositionProto:UpdateRelativeCoords(playerX, playerY, rotangle)
-	return true, 0
+function playerPositionProto:GetMapCoords()
+	local x, y = GetPlayerMapPosition("player")
+	if x ~= 0 and y ~= 0 then
+		return x, y
+	end
+end
+
+function playerPositionProto:UpdateRelativeCoords()	
+	return false -- NOOP
+end
+
+function playerPositionProto:LayoutWidgets(zoomRange, pixelsPerYard)
+	for name, widget in pairs(self.widgets) do
+		if widget:ShouldBeShown() then
+			widget:Show()
+			widget:SetPoint(0, 0, pixelsPerYard, 0, zoomRange)
+		else
+			widget:Hide()
+		end
+	end
 end
 
 --------------------------------------------------------------------------------

@@ -31,6 +31,10 @@ function addon.AcquireWidget(owner, typeName, ...)
 end
 addon.moduleProto.AcquireWidget = addon.AcquireWidget
 
+function addon:IterateActiveWidgets()
+	return pairs(activeWidgets)
+end
+
 function addon.ReleaseAllWidgets(owner)
 	for widget, widgetOwner in pairs(activeWidgets) do
 		if widgetOwner == owner then

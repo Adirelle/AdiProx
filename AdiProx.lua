@@ -157,43 +157,17 @@ function addon:CreateTheFrame()
 	scrollParent:SetScrollChild(scrollChild)
 	self.container = scrollChild
 	scrollChild:SetSize(scrollParent:GetSize())
-
-	local ticks = {}
-	for i, v in ipairs{{1,0}, {0,1}, {-1, 0}, {0, -1}} do
-		local dx, dy = unpack(v)
-		for j = 1, 3 do
-			local dist = j * 20
-			local tick = self.container:CreateTexture(nil, "BACKGROUND")
-			tick:SetTexture(0.7, 0.7, 0.7, 0.5)
-			if dx ~= 0 then
-				tick:SetSize(1, 5)
-			else
-				tick:SetSize(5, 1)
-			end
-			tick.x, tick.y = dist * dx, dist * dy
-			ticks[tick] = true
-		end
-	end
-	self.zoomTicks = ticks
 end
 
 --------------------------------------------------------------------------------
 -- Updating
 --------------------------------------------------------------------------------
 
-local function TestCondition(distance, threshold, invert)
-	if distance and threshold then
-		if invert then
-			return distance > threshold
-		else
-			return distance <= threshold
-		end
-	end
-end
-
 local log, pow = math.log, math.pow
 local log2 = log(2)
 local delay = 0
+local actualZoom, nextZoom, targetZoom, zoomDelay, zoomSpeed = ZOOM_GRANULARITY, ZOOM_GRANULARITY, ZOOM_GRANULARITY, 0, 0
+
 function addon:OnUpdate(elapsed)
 	delay = delay + elapsed
 	
@@ -203,67 +177,80 @@ function addon:OnUpdate(elapsed)
 		return
 	end
 	
-	local facing, px, py = GetPlayerFacing(), GetPlayerMapPosition("player")
-	if px == 0 and py == 0 then
+	local playerPos = self:GetUnitPosition("player")
+	local px, py = playerPos:GetMapCoords()
+	if not px or not py then
 		self.frame:Hide()
 		return
 	end
 
-	local pixelsPerYard = (self.container:GetWidth() - 16) / (self.zoomRange * 2)
-	local rotangle = 2 * math.pi - facing
-	local showMe = false
-	local playerAlert, playerPos = false, self:GetUnitPosition("player")
-	local playerDist, playerInvert = playerPos:GetAlertCondition()
-	local zoomRange = self.zoomRange
-
+	-- Update all widgets	
 	local now = GetTime()
-	local maxDist = ZOOM_GRANULARITY
+	for widget in self:IterateActiveWidgets() do
+		widget:OnUpdate(now)		
+	end
+
+	local showMe = false
+	local rotangle = 2 * math.pi - GetPlayerFacing()
+	local maxRange = ZOOM_GRANULARITY
+	
 	for position in self:IterateActivePositions() do
-		if position ~= playerPos then
-			local state, distance, range = position:UpdateRelativeCoords(px, py, rotangle, zoomRange)
-			if state ~= "invalid" then
-				if TestCondition(distance, playerDist, playerInvert) then
-					position:SetAlert(true)
-					playerAlert = true
-				else
-					position:SetAlert(TestCondition(distance, position:GetAlertCondition()))
-				end
+		local valid, distance, zoomRange = position:UpdateRelativeCoords(px, py, rotangle)
+		if valid then
+			if playerPos:TestAlert(distance) then
+				playerPos:SetAlert(true)
+				position:SetAlert(true)
+			else
+				position:SetAlert(position:TestAlert(distance))
 			end
-			if position:UpdateWidgets(pixelsPerYard, now) then
+			if position:IsImportant() then
 				showMe = true
-				maxDist = max(maxDist, range * 1.25)
+				maxRange = max(maxRange, zoomRange * 1.1)
 			end
 		end
 	end
-	playerPos:SetAlert(playerAlert)
-	if playerPos:UpdateWidgets(pixelsPerYard, now) then
+
+	-- Finally update player position	
+	if playerPos:IsImportant() then
 		showMe = true
 	end
 	
-	if showMe or IsShiftKeyDown() then
-		self.frame:Show()
-		if self.zoomRange ~= self.tickRange then
-			for tick in pairs(self.zoomTicks) do
-				tick:SetPoint("CENTER", tick.x * pixelsPerYard, tick.y * pixelsPerYard)
-			end
-			self.tickRange = self.zoomRange
-		end
-	else
-		self.frame:Hide()
+	if not showMe and not IsShiftKeyDown() then
+		self.forceUpdate = nil
+		return self.frame:Hide()
 	end
 	
-	--local newZoom = ZOOM_GRANULARITY * ceil(maxDist / ZOOM_GRANULARITY)
-	local newZoom = ZOOM_GRANULARITY * pow(2, ceil(log(min(maxDist, MAX_ZOOM) / ZOOM_GRANULARITY) / log2))
-	if newZoom ~= self.targetZoom then
-		self.zoomSpeed = max(newZoom, self.targetZoom or 0) / 0.5
-		self.targetZoom = newZoom
+	local idealZoom = ZOOM_GRANULARITY * pow(2, ceil(log(min(maxRange, MAX_ZOOM) / ZOOM_GRANULARITY) / log2))
+	if not self.frame:IsShown() then
+		-- Directly use the ideal zoom on show
+		actualZoom, nextZoom, targetZoom = idealZoom, idealZoom, idealZoom
+	else
+		-- Wait a small period (0.5s) before actually change the zoom
+		if nextZoom ~= idealZoom then
+			nextZoom, zoomDelay = idealZoom, 0.2
+		elseif targetZoom ~= nextZoom then
+			zoomDelay = zoomDelay - elapsed
+			if zoomDelay <= 0 then
+				targetZoom, zoomSpeed = nextZoom, max(nextZoom, targetZoom) / 0.5
+			end
+		end
+		
+		-- Have actualZoom reach targetZoom
+		if actualZoom < targetZoom then
+			actualZoom = min(actualZoom + elapsed * zoomSpeed, targetZoom)
+		elseif actualZoom > targetZoom then
+			actualZoom = max(actualZoom - elapsed * zoomSpeed, targetZoom)
+		end
 	end
-	if newZoom > self.zoomRange then
-		self.zoomRange = min(self.zoomRange + elapsed * self.zoomSpeed, newZoom)
-	elseif newZoom < self.zoomRange then
-		self.zoomRange = max(self.zoomRange - elapsed * self.zoomSpeed, newZoom)
+	
+	local pixelsPerYard = (self.container:GetWidth() - 16) / (actualZoom * 2)
+	
+	-- Layout widgets
+	for position in self:IterateActivePositions() do
+		position:LayoutWidgets(actualZoom, pixelsPerYard)
 	end
-
+	
+	self.frame:Show()
 	self.forceUpdate = nil
 end
 
