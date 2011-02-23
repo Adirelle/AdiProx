@@ -26,6 +26,9 @@ libs\LibMapData-1.0\library.lua
 # Not on wowace.com
 libs\LibMovable-1.0\LibMovable-1.0.lua
 
+# Home-made
+LibCombatLogEvent-1.0.lua
+
 AdiProx.lua
 Positions.lua
 Widgets.lua
