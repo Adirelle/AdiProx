@@ -158,7 +158,7 @@ function widgetProto:AcquireAnimation(...)
 	return animation
 end
 
-function widgetProto:ReleaseAnimation(anim)
+function widgetProto:ReleaseAnimation(animation)
 	if self.animations[animation] then
 		self.animations[animation] = nil
 		animation:Attach(nil)
