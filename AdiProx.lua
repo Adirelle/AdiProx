@@ -209,7 +209,7 @@ function addon:OnUpdate(elapsed)
 		return
 	end
 
-	local pixelsPerYard = self.container:GetWidth() / (self.zoomRange * 2)
+	local pixelsPerYard = (self.container:GetWidth() - 16) / (self.zoomRange * 2)
 	local rotangle = 2 * math.pi - facing
 	local showMe = false
 	local playerAlert, playerPos = false, self:GetUnitPosition("player")
