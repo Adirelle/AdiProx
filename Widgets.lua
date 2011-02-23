@@ -287,7 +287,7 @@ function rangeWidgetProto:SetRadiusModifier(radiusModifier)
 	return self
 end
 
-function widgetProto:SetPoint(x, y, pixelsPerYard, distance)
+function rangeWidgetProto:SetPoint(x, y, pixelsPerYard, distance)
 	widgetProto.SetPoint(self, x, y, pixelsPerYard, distance)
 	if pixelsPerYard ~= self.pixelsPerYard then
 		self.pixelsPerYard = pixelsPerYard
