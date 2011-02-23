@@ -174,6 +174,7 @@ function widgetProto:SetPosition(position)
 		end
 		self.x, self.y = nil, nil
 		self:OnPositionChanged()
+		self:SetAlert(position and position.alert)
 		if position then
 			self:Show()
 		else

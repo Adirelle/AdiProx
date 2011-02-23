@@ -106,6 +106,9 @@ end
 function positionProto:SetAlert(alert)
 	if alert ~= self.alert then
 		self.alert = alert
+		for name, widget in pairs(self.widgets) do
+			widget:SetAlert(alert)
+		end
 	end
 end
 
@@ -131,9 +134,8 @@ function positionProto:UpdateRelativeCoords(playerX, playerY, rotangle, maxZoomR
 end
 
 function positionProto:UpdateWidgets(pixelsPerYard, now)
-	local inAlert, hasImportant = self.alert, false
+	local hasImportant = false
 	for name, widget in pairs(self.widgets) do
-		widget:SetAlert(inAlert)
 		widget:OnUpdate(now)
 		if widget:IsImportant() then
 			hasImportant = true
