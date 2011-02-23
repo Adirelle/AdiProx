@@ -105,7 +105,8 @@ function widgetProto:Hide()
 	return self
 end
 
-function widgetProto:SetImportant(imporant)
+function widgetProto:SetImportant(important)
+	important = not not important
 	if self.important ~= important then
 		self.important = important
 		addon.forceUpdate = true
@@ -122,6 +123,7 @@ function widgetProto:ShouldBeShown()
 end
 
 function widgetProto:SetExpires(expires)
+	expires = expires and tonumber(expires) or nil
 	if expires and expires < GetTime() then
 		self:Release()
 	else
