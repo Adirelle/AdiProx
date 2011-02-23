@@ -224,8 +224,8 @@ function unitPositionProto:GetMapCoords()
 	end
 end
 
-function unitPositionProto:CreateStaticCoords()
-	return addon:AcquirePlayerPosition(self:GetMapCoords())
+function unitPositionProto:GetStaticPosition()
+	return AcquirePosition(staticPositionMeta, self:GetMapCoords())
 end
 
 --------------------------------------------------------------------------------
@@ -253,14 +253,11 @@ local GetNumRaidMembers, GetNumPartyMembers, UnitGUID, UnitExists = GetNumRaidMe
 local guidToUnit = {}
 
 setmetatable(unitPositions, { __index = function(t, unit)
-	local position = false
-	if unit == "player" then
-		position = AcquirePosition(playerPositionMeta, "player")
-	elseif unit then
-		position = AcquirePosition(unitPositionMeta, unit)
+	if unit then
+		local position = AcquirePosition(unit == "player" and playerPositionMeta or unitPositionMeta, "player")
+		t[unit] = position
+		return position
 	end
-	t[unit] = position
-	return position
 end})
 
 function addon.GetGUIDUnit(guid)
