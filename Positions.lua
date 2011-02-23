@@ -155,11 +155,12 @@ function positionProto:IsImportant()
 end
 
 function positionProto:LayoutWidgets(zoomRange, pixelsPerYard)
-	local x, y
+	local x, y, onEdge
 	if self.isValid then
-		if self.zoomRange <= zoomRange then
+		if self.zoomRange <= zoomRange then			
 			x, y = self.relX * pixelsPerYard, self.relY * pixelsPerYard
 		elseif self.important then
+			onEdge = true
 			local f = zoomRange / self.zoomRange
 			x, y = self.relX * f * pixelsPerYard, self.relY * f * pixelsPerYard
 		end
@@ -169,7 +170,7 @@ function positionProto:LayoutWidgets(zoomRange, pixelsPerYard)
 		for name, widget in pairs(self.widgets) do
 			if widget:ShouldBeShown() then
 				widget:Show()
-				widget:SetPoint(x, y, pixelsPerYard, distance, zoomRange)
+				widget:SetPoint(x, y, pixelsPerYard, distance, zoomRange, onEdge)
 			else
 				widget:Hide()
 			end

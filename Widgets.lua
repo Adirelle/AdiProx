@@ -194,10 +194,14 @@ function widgetProto:OnUpdate(now)
 	end
 end
 
-function widgetProto:SetPoint(x, y, pixelsPerYard, distance)
+function widgetProto:SetPoint(x, y, pixelsPerYard, distance, zoomRange, onEdge)
 	if x ~= self.x or y ~= self.y then
 		self.x, self.y = x, y
 		self.frame:SetPoint("CENTER", x, y)
+	end
+	if onEdge ~= self.onEdge then
+		self.onEdge = onEdge
+		self.frame:SetAlpha(onEdge and 0.5 or 1)
 	end
 end
 
