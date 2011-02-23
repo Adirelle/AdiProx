@@ -43,6 +43,7 @@ local UPDATE_PERIOD = 1/30
 
 local ZOOM_GRANULARITY = 25
 local MAX_ZOOM = ZOOM_GRANULARITY * 4
+addon.MAX_ZOOM = MAX_ZOOM
 
 local LibMapData = LibStub('LibMapData-1.0')
 
@@ -96,13 +97,6 @@ function addon:OnEnable()
 
 	self:RegisterEvent('PARTY_MEMBERS_CHANGED')
 	self:PARTY_MEMBERS_CHANGED("OnEnable")
-
-	local player = self:GetUnitPosition("player")
-	if not player:GetWidget('arrow') then
-		local playerArrow = self:AcquireWidget("icon", [[Interface\Minimap\MinimapArrow]], 32)
-		player:Attach("arrow", playerArrow)
-	end
-
 end
 
 function aptest()

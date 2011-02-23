@@ -36,7 +36,9 @@ Animations.lua
 Options.lua
 Localization.lua
 
+modules\Player.lua
 modules\Group.lua
 modules\Ping.lua
 modules\Encounters.lua
 modules\encounters\encounters.xml
+
