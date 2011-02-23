@@ -97,14 +97,12 @@ function pingWidgetProto:OnAcquire(x, y, sender)
 	self:SetImportant(true):SetDuration(5)
 	addon:GetStaticPosition(x, y):Attach("ping", self)
 	
-	self.Icon1 = addon:AcquireAnimation(self.frame, [[Interface\Minimap\Ping\ping5]], 16, 1, 1, 1, 1, "ADD"):Rotate(-360, 2)
-	self.Icon2 = addon:AcquireAnimation(self.frame, [[Interface\Minimap\Ping\ping2]], 12, 1, 1, 1, 1, "ADD"):Pulse(1.5, 1)
+	self:AcquireAnimation([[Interface\Minimap\Ping\ping5]], 16, 1, 1, 1, 1, "ADD"):Rotate(-360, 2)
+	self:AcquireAnimation([[Interface\Minimap\Ping\ping2]], 12, 1, 1, 1, 1, "ADD"):Pulse(1.5, 1)
 end
 
 function pingWidgetProto:OnRelease()
 	parentProto.OnRelease(self)
-	self.Icon1:Release()
-	self.Icon2:Release()
 	mod.widget = nil
 end
 

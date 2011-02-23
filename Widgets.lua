@@ -65,11 +65,15 @@ widgetProto.Debug = addon.Debug
 
 function widgetProto:OnCreate()
 	self.frame = self:CreateFrame(addon.container)
+	self.animations = {}
 end
 
 function widgetProto:Release()
 	if activeWidgets[self] then
 		activeWidgets[self] = nil
+		for animation in pairs(self.animations) do
+			animation:Release()
+		end
 		self:OnRelease()
 		self.heap[self] = true
 	end
@@ -143,6 +147,20 @@ function widgetProto:OnAlertChanged()
 end
 
 function widgetProto:OnPositionChanged()	
+end
+
+function widgetProto:AcquireAnimation(...)
+	local animation = addon:AcquireAnimation(self.frame, ...)
+	self.animations[animation] = true
+	animation:Attach(self)
+	return animation
+end
+
+function widgetProto:ReleaseAnimation(anim)
+	if self.animations[animation] then
+		self.animations[animation] = nil
+		animation:Attach(nil)
+	end
 end
 
 function widgetProto:SetPosition(position)

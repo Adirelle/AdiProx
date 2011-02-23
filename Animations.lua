@@ -12,6 +12,7 @@ local heap = {}
 local parentProto = CreateFrame("Frame")
 local proto = setmetatable({ Debug = addon.Debug }, { __index = parentProto })
 local meta = { __index = proto }
+local serial = 0
 
 function addon:AcquireAnimation(parent, ...)
 	local frame = next(heap)
@@ -24,10 +25,13 @@ function addon:AcquireAnimation(parent, ...)
 	frame:SetParent(parent)
 	frame:SetPoint("CENTER", parent, "CENTER", 0, 0)
 	frame:OnAcquire(...)
+	frame:Debug('Acquired')
 	return frame
 end
 
 function proto:OnCreate()
+	serial = serial + 1
+	self.name = "Animation"..serial
 	self:SetScript('OnShow', self.OnShow)
 	self:SetScript('OnHide', self.OnHide)	
 	self.Texture = self:CreateTexture(nil, "ARTWORK")
@@ -49,11 +53,28 @@ end
 function proto:Release()
 	if not heap[self] then
 		heap[self] = true
+		self:Attach(nil)
 		self:Hide()
 		self:Pulse(nil, nil)
 		self:Rotate(nil, nil)
 		self:ClearAllPoints()
 		self:SetParent(nil)
+	end
+end
+
+function proto:Attach(attach)
+	local oldAttach = self.attach
+	if oldAttach ~= attach then
+		self.attach = attach
+		if oldAttach and oldAttach.ReleaseAnimation then
+			oldAttach:ReleaseAnimation(self)
+		end
+		if oldAttach then		
+			self:Debug('Detached from', oldAttach)
+		end
+		if attach then
+			self:Debug('Attached to', attach)
+		end
 	end
 end
 
