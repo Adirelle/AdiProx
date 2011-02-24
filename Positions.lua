@@ -157,15 +157,19 @@ end
 function positionProto:LayoutWidgets(zoomRange, pixelsPerYard)
 	local x, y, onEdge
 	if self.isValid then
-		if self.zoomRange <= zoomRange then			
+		onEdge = self.zoomRange > zoomRange 
+		if not onEdge or self.important then
 			x, y = self.relX * pixelsPerYard, self.relY * pixelsPerYard
-		elseif self.important then
-			onEdge = true
-			local f = zoomRange / self.zoomRange
-			x, y = self.relX * f * pixelsPerYard, self.relY * f * pixelsPerYard
 		end
 	end
 	if x and y then	
+		if onEdge then
+			if not self.widgets.edge_arrow then
+				self:Attach('edge_arrow', addon:AcquireWidget('edge_arrow'))
+			end
+		elseif self.widgets.edge_arrow then
+			self.widgets.edge_arrow:Release()
+		end
 		local showImportant
 		local distance = self.distance
 		for name, widget in pairs(self.widgets) do
@@ -358,5 +362,3 @@ function addon:PARTY_MEMBERS_CHANGED()
 		self:SendMessage('AdiProx_GroupChanged')
 	end
 end
-
-

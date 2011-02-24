@@ -199,10 +199,6 @@ function widgetProto:SetPoint(x, y, pixelsPerYard, distance, zoomRange, onEdge)
 		self.x, self.y = x, y
 		self.frame:SetPoint("CENTER", x, y)
 	end
-	if onEdge ~= self.onEdge then
-		self.onEdge = onEdge
-		self.frame:SetAlpha(onEdge and 0.5 or 1)
-	end
 end
 
 --------------------------------------------------------------------------------
@@ -316,11 +312,38 @@ function rangeWidgetProto:SetRadiusModifier(radiusModifier)
 	return self
 end
 
-function rangeWidgetProto:SetPoint(x, y, pixelsPerYard, distance)
-	widgetProto.SetPoint(self, x, y, pixelsPerYard, distance)
+function rangeWidgetProto:SetPoint(x, y, pixelsPerYard, ...)
+	iconWidgetProto.SetPoint(self, x, y, pixelsPerYard, ...)
 	if pixelsPerYard ~= self.pixelsPerYard then
 		self.pixelsPerYard = pixelsPerYard
 		self:SetSize(2 * self.radius * pixelsPerYard * self.radiusModifier)
 	end
 end
 
+--------------------------------------------------------------------------------
+-- Edge arrow
+--------------------------------------------------------------------------------
+
+local edgeArrowProto = NewWidgetType('edge_arrow', 'abstract')
+
+function edgeArrowProto:CreateFrame(parent)
+	local f = addon:CreateTexture(parent, nil, "ARTWORK")
+	f:SetSize(48, 48)
+	f:SetTexture([[Interface\Minimap\ROTATING-MINIMAPARROW]])
+	return f
+end
+
+function edgeArrowProto:ShouldBeShown(onEdge)
+	return onEdge and widgetProto.ShouldBeShown(self, onEdge)
+end
+
+local atan2 = math.atan2
+function edgeArrowProto:SetPoint(x, y, pixelsPerYard, distance, zoomRange, onEdge)
+	if self.x ~= x or self.y ~= y then
+		self.x, self.y = x, y
+		local f = zoomRange / self.position.zoomRange
+		self.frame:SetRotation(atan2(-x, y))
+		self.frame:SetPoint("CENTER", x * f, y * f)
+		--self.frame:DrawRouteLine(0, 0, x*f, y*f, 10, addon.container, "CENTER")
+	end
+end
