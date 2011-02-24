@@ -37,7 +37,6 @@ local DEFAULT_SETTINGS = {}
 --------------------------------------------------------------------------------
 
 local prefs
-local classColors
 
 local UPDATE_PERIOD = 1/30
 
@@ -66,13 +65,6 @@ function addon:OnInitialize()
 
 	--self:RegisterChatCommand("acm", "ChatCommand", true)
 	--self:RegisterChatCommand(addonName, "ChatCommand", true)
-
-	if CUSTOM_CLASS_COLORS then
-		classColors = CUSTOM_CLASS_COLORS
-		classColors:RegisterCallback(function() if self:IsEnabled() then self:SendMessage("AdiProx_ClassColorsChanged") end end)
-	else
-		classColors = RAID_CLASS_COLORS
-	end		
 end
 
 function addon:OnEnable()
@@ -264,12 +256,12 @@ end
 function addon:GetUnitColor(unit)
 	if unit then
 		local _, class = UnitClass(unit)
-		return class and classColors[class]
+		return class and self.COLORS[class]
 	end
 end
 
 function addon:GetClassColor(class)
-	return class and classColors[class]
+	return class and self.COLORS[class]
 end
 
 --------------------------------------------------------------------------------
