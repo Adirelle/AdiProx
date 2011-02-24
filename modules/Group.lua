@@ -60,13 +60,11 @@ end
 function partyWidgetProto:Update()
 	local unit = self.unit
 	if not unit then return end
-	local color = addon:GetUnitColor(unit)
+	local r, g, b = addon.ParseColor(select(2, UnitClass(unit)))
 
 	local name = self.Name
 	name:SetText(UnitName(unit))
-	if color then
-		name:SetTextColor(color.r, color.g, color.b)
-	end
+	name:SetTextColor(r, g, b, 0.75)
 	self:OnAlertChanged()
 
 	local symbol = GetRaidTargetIndex(unit)
@@ -79,9 +77,7 @@ function partyWidgetProto:Update()
 	else
 		icon:SetTexture([[Interface\Minimap\PartyRaidBlips]])
 		icon:SetTexCoord(0.875, 1, 0.25, 0.5)
-		if color then
-			icon:SetVertexColor(color.r, color.g, color.b ,1)
-		end
+		icon:SetVertexColor(r, g, b, 1)
 		icon:SetSize(16, 16)
 	end
 	
