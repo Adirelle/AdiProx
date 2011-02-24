@@ -97,6 +97,7 @@ function aptest()
 		local pos = addon:GetStaticPosition(px, py)
 		pos:SetAlertCondition(5)
 		local mark = addon:AcquireWidget("range", [[Interface\Cooldown\ping4]], 5, 1, 1, 1, 1, "ADD")
+		mark:SetImportant(true)
 		pos:Attach("mark", mark)
 	end
 end

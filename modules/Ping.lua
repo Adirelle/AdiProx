@@ -86,13 +86,9 @@ function pingWidgetProto:OnAcquire(x, y, sender)
 	parentProto.OnAcquire(self)
 	mod.widget = self
 	
-	local name, color = UnitName(sender), addon:GetUnitColor(sender)
+	local name = UnitName(sender)
 	self.Name:SetText(name)
-	if color then
-		self.Name:SetTextColor(color.r, color.g, color.b)
-	else
-		self.Name:SetTextColor(1, 1, 1)
-	end
+	self.Name:SetTextColor(addon.ParseColor(select(2, UnitClass(sender))))
 	
 	self:SetImportant(true):SetDuration(5)
 	addon:GetStaticPosition(x, y):Attach("ping", self)

@@ -22,11 +22,11 @@ function proto:CreateFrame(parent)
 	local frame = CreateFrame("Frame", nil, parent)
 	frame:SetAllPoints(parent)
 
-	local arrow = frame:CreateTexture(nil, "ARTWORK")	
+	local arrow = frame:CreateTexture(nil, "ARTWORK")
 	arrow:SetTexture([[Interface\Minimap\MinimapArrow]])
 	arrow:SetSize(32, 32)
 	arrow:SetPoint("CENTER")
-	
+
 	local text = frame:CreateFontString(nil, "ARTWORK", "SystemFont_Shadow_Small")
 	text:SetTextColor(0.7, 0.7, 0.7, 0.5)
 	text:SetPoint("BOTTOMRIGHT")
@@ -37,8 +37,11 @@ function proto:CreateFrame(parent)
 		local dx, dy = unpack(v)
 		for dist = 20, addon.MAX_ZOOM, 20 do
 			local tick = frame:CreateTexture(nil, "BACKGROUND")
-			tick:SetTexture(0.7, 0.7, 0.7, 0.5)
-			local size = dist == 40 and 9 or 5
+			local size, light = 5, 0.7
+			if dist == 40 then
+				size, light = 9, 1
+			end
+			tick:SetTexture(light, light, light, 0.5)
 			if dx ~= 0 then
 				tick:SetSize(1, size)
 			else
@@ -59,6 +62,8 @@ function proto:SetPoint(x, y, pixelsPerYard, distance, zoomRange)
 			tick:SetPoint("CENTER", tick.x * pixelsPerYard, tick.y * pixelsPerYard)
 		end
 	end
-	self.Text:SetFormattedText("%dm", ceil(zoomRange))
+	if zoomRange ~= self._zoomRange then
+		self._zoomRange = zoomRange
+		self.Text:SetFormattedText("%dm", ceil(zoomRange))
+	end
 end
-
