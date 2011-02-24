@@ -30,6 +30,7 @@ libs\LibMovable-1.0\LibMovable-1.0.lua
 LibCombatLogEvent-1.0.lua
 
 Colors.lua
+Textures.lua
 Localization.lua
 AdiProx.lua
 Positions.lua
