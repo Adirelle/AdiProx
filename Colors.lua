@@ -6,48 +6,49 @@ All rights reserved.
 
 local addonName, addon = ...
 
-local COLORS = {}
+local COLORS = {
+	-- Gathered from Blizzard_CombatLog.lua
+	PHYSICIAL = { r = 1.0, g = 1.0, b = 0.0 },
+	HOLY      = { r = 1.0, g = 0.9, b = 0.5 },
+	FIRE      = { r = 1.0, g = 0.5, b = 0.0 },
+	NATURE    = { r = 0.3, g = 1.0, b = 0.3 },
+	FROST     = { r = 0.5, g = 1.0, b = 1.0 },
+	SHADOW    = { r = 0.5, g = 0.5, b = 1.0 },
+	ARCANE    = { r = 1.0, g = 0.5, b = 1.0 },
+}
 addon.COLORS = COLORS
 
-local function SetColor(key, color)
-	if not COLORS[key] then
-		COLORS[key] = {}
-	end
-	local c = COLORS[key]
-	c[1], c[2], c[3] = color.r, color.g, color.b
+-- Add debuff type colors
+for key, color in pairs(DebuffTypeColor) do
+	COLORS[key] = color
 end
 
-local function MergeColors(t)
-	for key, color in pairs(t) do
-		SetColor(key, color)
-	end
+-- Add class colors
+for key, color in pairs(CUSTOM_CLASS_COLORS or RAID_CLASS_COLORS) do
+	COLORS[key] = color
+end
+if CUSTOM_CLASS_COLORS and CUSTOM_CLASS_COLORS.RegisterCallback then
+	CUSTOM_CLASS_COLORS:RegisterCallback(function() addon:SendMessage("AdiProx_ClassColorsChanged") end)
 end
 
-MergeColors(DebuffTypeColor)
-MergeColors(RAID_CLASS_COLORS)
-
+-- Add some colors from font styles
 for _, key in pairs{"NORMAL", "HIGHLIGHT", "RED", "DIM_RED", "GREEN", "GRAY", "YELLOW", "LIGHTYELLOW", "ORANGE", "PASSIVE_SPELL"} do
-	SetColor(key, _G[key.."_FONT_COLOR"])
+	COLORS[key] = _G[key.."_FONT_COLOR"])
 end
 
-function addon.ParseColor(r, g, b, alpha)
+-- Core of color: parse color definitiion, either:
+-- * addon.ParseColor("colorname", alpha): try to solve the color name
+-- * addon.ParseColor(r, g, b, alpha): sanitize the color values
+-- Returns (r, g, b, alpha), alpha defaults to 1 and if anything is wrong, returns 1, 1, 1.
+local function ParseColor(r, g, b, alpha)
 	if type(r) == "string" then
-		alpha = g
-		if COLORS[r] then
-			r, g, b = unpack(COLORS[r])
-		else
-			r, g, b = 1, 1, 1
+		local c = COLORS[r]
+		if c then
+			return c.r, c.g, c.b, g or 1
 		end
+	elseif r and g and b then
+		return r, g, b, alpha or 1
 	end
-	return r or 1, g or 1, b or 1, alpha or 1
+	return 1, 1, 1, alpha or 1
 end
-
-if CUSTOM_CLASS_COLORS then
-	MergeColors(CUSTOM_CLASS_COLORS)
-	if CUSTOM_CLASS_COLORS.RegisterCallback then
-		CUSTOM_CLASS_COLORS:RegisterCallback(function()
-			MergeColors(CUSTOM_CLASS_COLORS)
-			addon:SendMessage("AdiProx_ClassColorsChanged")
-		end)
-	end
-end
+addon.ParseColor = ParseColor
