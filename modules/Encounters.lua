@@ -68,8 +68,8 @@ function mod:UpdateModules(event)
 		end
 
 		-- Check boss-related modules
-		if not enabled and hasBoss and module.bosses then
-			for i, mob in pairs(module.bosses) do
+		if not enabled and hasBoss and module.mobs then
+			for i, mob in pairs(module.mobs) do
 				if mobUnits[mob] then
 					enable = true
 					break
@@ -131,6 +131,48 @@ mod:SetDefaultModulePrototype(moduleProto)
 mod:SetDefaultModuleState(false)
 mod:SetDefaultModuleLibraries('LibCombatLogEvent-1.0', 'AceEvent-3.0', 'AceTimer-3.0')
 
+-- Definition helpers
+
+local function MergeList(self, key, ...)
+	local t = self[key]
+	if not t then
+		t = {}
+		self[key] = t
+	end
+	for i = 1, select('#', ...) do
+		tinsert(t, (select(i, ...)))
+	end
+	return self
+end
+
+local DEFAULT_DEF = {}
+local function MergeData(self, key, ...)
+	local t = self[key]
+	if not t then
+		t = {}
+		self[key] = t
+	end
+	local n = select('#', ...)
+	local data = select(n, ...)
+	if type(data) == "table" then
+		n = n - 1
+	else
+		data = DEFAULT_DEF
+	end
+	for i = 1, n do
+		t[select(i, ...)] = data
+	end
+	return self
+end
+
+function moduleProto:AgainstMobs(...) return MergeList(self, "mobs", ...) end
+function moduleProto:InMaps(...) return MergeList(self, "maps", ...) end
+
+function moduleProto:WatchAuras(...) return MergeData(self, "auras", ...) end
+function moduleProto:WatchSpellCasts(...) return MergeData(self, "spellCasts", ...) end
+
+-- Enabling
+
 function moduleProto:OnEnable()
 	if self.auras then
 		self:Debug('Watching auras')
@@ -163,12 +205,9 @@ function moduleProto:PlaceMarker(key, target, static, markerType, color, radius,
 	end
 	local widget = position:GetWidget(key)
 	self:Debug('PlaceMarker: position=', position, 'existingMarker=', marker)
-	if radius then
-		local reverse = radius < 0
-		if reverse then
-			radius = -radius
-		end
-		position:SetAlertCondition(radius, reverse)
+	local reverse = radius and radius < 0
+	if reverse then
+		radius = -radius
 	end
 	if not widget then
 		self:Debug('PlaceMarker: creating a new marker')
@@ -179,6 +218,7 @@ function moduleProto:PlaceMarker(key, target, static, markerType, color, radius,
 		self:Debug('PlaceMarker: refreshing the existing marker')
 		widget:Refresh(radius, duration)
 	end
+	widget:SetAlertRadius(radius, reverse)
 	return widget, position
 end
 
@@ -206,12 +246,13 @@ function moduleProto:SPELL_AURA_REMOVED(event, args)
 end
 
 function moduleProto:SPELL_CAST_START(event, args)
-	if self.spellCasts[args.spellId] then
+	local spell = self.spellCasts[args.spellId]
+	if spell then
 		wipe(self.currentCast)
 		for k, v in pairs(args) do
 			self.currentCast[k] = v
 		end
-		self:ScheduleTimer("GetSpellCastTarget", 0.1, self.currentCast)
+		self:ScheduleTimer("GetSpellCastTarget", spell.targetDelay or 0.1, self.currentCast)
 	end
 end
 
@@ -229,8 +270,15 @@ function moduleProto:GetSpellCastTarget(args)
 	local duration = (select(6, UnitCastingInfo(unit)) or 0) / 1000 - GetTime()
 	args.destName = UnitName(target)
 	args.destGUID = UnitGUID(target)
-	self:OnSpellCast(args.event, args, duration)
-	wipe(args)
+	if self.spellCasts[args.spellId].atEnd then
+		self:ScheduleTimer("OnSpellCastEnd", duration, args)
+	else
+		self:OnSpellCast(args.event, args, duration)
+	end
+end
+
+function moduleProto:OnSpellCastEnd(args)
+	return self:OnSpellCast(args.event, args, 1)
 end
 
 function moduleProto:OnSpellCast(event, args, duration)
