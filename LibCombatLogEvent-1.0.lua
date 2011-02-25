@@ -52,8 +52,8 @@ lib.embeds = lib.embeds or {}
 -- The callback handler
 lib.callbacks = lib.callbacks or LibStub('CallbackHandler-1.0'):New(lib, "RegisterCombatLogEvent", "UnregisterCombatLogEvent", "UnregisterAllCombatLogEvents")
 
--- The event table, that will be filled with event arguments
-lib.evt = lib.evt or {}
+-- The argument table, that will be filled with event arguments
+lib.args = lib.args or {}
 
 -- Functions to fill the event table, indexed by event arguments
 lib.fillersByArgs = lib.fillersByArgs or {}
@@ -68,7 +68,7 @@ lib.fillersByEvent = lib.fillersByEvent or {}
 local registeredEvents = lib.registeredEvents
 local callbacks = lib.callbacks
 local fillersByEvent = lib.fillersByEvent
-local evt = lib.evt
+local args = lib.args
 
 -- Register COMBAT_LOG_EVENT_UNFILTERED when the first combat event is registered
 function callbacks:OnUsed(_, event)
@@ -89,7 +89,7 @@ end
 -- Dispatch the combat log event
 lib.eventFrame:SetScript('OnEvent', function(_, _, _, event, ...)
 	if registeredEvents[event] then
-		callbacks:Fire(event, fillersByEvent[event](evt, event, ...))
+		callbacks:Fire(event, fillersByEvent[event](args, event, ...))
 	end
 end)
 
