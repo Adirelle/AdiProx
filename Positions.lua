@@ -77,12 +77,12 @@ function positionProto:Attach(name, widget)
 	end
 end
 
-function positionProto:Detach(widget)
-	for name, w in pairs(self.widgets) do
-		if name == widget or w == widget then
+function positionProto:Detach(toDetach)
+	for name, widget in pairs(self.widgets) do
+		if name == toDetach or widget == toDetach then
 			self.widgets[name] = nil
 			widget:SetPosition(nil)
-			return w, name
+			return widget, name
 		end
 	end
 end
@@ -154,6 +154,22 @@ function positionProto:IsImportant()
 	return important
 end
 
+local function DoLayoutWidget(self, x, y, pixelsPerYard, distance, zoomRange, onEdge)
+	local showImportant
+	for name, widget in pairs(self.widgets) do
+		if widget:ShouldBeShown(onEdge) then
+			widget:Show()
+			widget:SetPoint(x, y, pixelsPerYard, distance, zoomRange, onEdge)
+			if widget:IsImportant() then
+				showImportant = true
+			end
+		else
+			widget:Hide()
+		end
+	end
+	return showImportant
+end
+
 function positionProto:LayoutWidgets(zoomRange, pixelsPerYard)
 	local x, y, onEdge
 	if self.isValid then
@@ -170,20 +186,7 @@ function positionProto:LayoutWidgets(zoomRange, pixelsPerYard)
 		elseif self.widgets.edge_arrow then
 			self.widgets.edge_arrow:Release()
 		end
-		local showImportant
-		local distance = self.distance
-		for name, widget in pairs(self.widgets) do
-			if widget:ShouldBeShown(onEdge) then
-				widget:Show()
-				widget:SetPoint(x, y, pixelsPerYard, distance, zoomRange, onEdge)
-				if widget:IsImportant() then
-					showImportant = true
-				end
-			else
-				widget:Hide()
-			end
-		end
-		return showImportant
+		return DoLayoutWidget(self, x, y, pixelsPerYard, distance, zoomRange, onEdge)
 	else
 		for name, widget in pairs(self.widgets) do
 			widget:Hide()
@@ -298,14 +301,7 @@ function playerPositionProto:UpdateRelativeCoords()
 end
 
 function playerPositionProto:LayoutWidgets(zoomRange, pixelsPerYard)
-	for name, widget in pairs(self.widgets) do
-		if widget:ShouldBeShown() then
-			widget:Show()
-			widget:SetPoint(0, 0, pixelsPerYard, 0, zoomRange)
-		else
-			widget:Hide()
-		end
-	end
+	return DoLayoutWidget(self, 0, 0, pixelsPerYard, 0, zoomRange, false)
 end
 
 --------------------------------------------------------------------------------
