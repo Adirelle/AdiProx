@@ -121,8 +121,12 @@ function widgetProto:IsImportant()
 	return self.important or self.alert
 end
 
-function widgetProto:ShouldBeShown()
-	return activeWidgets[self]
+function widgetProto:IsActive()
+	return not not activeWidgets[self]
+end
+
+function widgetProto:ShouldBeShown(onEdge)
+	return self:IsActive()
 end
 
 function widgetProto:SetExpires(expires)
