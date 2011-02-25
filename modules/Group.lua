@@ -33,24 +33,25 @@ end
 --------------------------------------------------------------------------------
 
 local partyWidgetProto, parentProto = addon.NewWidgetType('player_blip', 'abstract')
+partyWidgetProto.frameLevel = 8
+
 local AceEvent = LibStub('AceEvent-3.0')
 
 function partyWidgetProto:CreateFrame(parent)
 	local frame = CreateFrame("Frame", nil, parent)
 	frame:SetSize(8, 8)
 
-	local icon = frame:CreateTexture(nil, "ARTWORK")
+	local icon = frame:CreateTexture(nil, "OVERLAY")
 	icon:SetPoint("CENTER")
 	self.Icon = icon
 	
-	local targetRing = frame:CreateTexture(nil, "OVERLAY")
-	targetRing:SetTexture([[Interface\Cooldown\ping4]])
+	local targetRing = addon:CreateTexture(frame, nil, "OVERLAY")
+	targetRing:SetTexture("ring")
 	targetRing:SetPoint("CENTER")
 	targetRing:SetSize(16, 16)
-	targetRing:SetBlendMode("ADD")
 	self.TargetRing = targetRing
 
-	local name = frame:CreateFontString(nil, "ARTWORK", "SystemFont_Shadow_Small")
+	local name = frame:CreateFontString(nil, "OVERLAY", "SystemFont_Shadow_Small")
 	name:SetPoint("BOTTOM", icon, "CENTER", 0, 8)
 	self.Name = name
 

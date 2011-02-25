@@ -66,9 +66,14 @@ addon.NewWidgetType = NewWidgetType
 local widgetProto = NewWidgetType('abstract')
 
 widgetProto.Debug = addon.Debug
+widgetProto.frameLevel = 5
 
 function widgetProto:OnCreate()
 	self.frame = self:CreateFrame(addon.container)
+	self.frame:Hide()
+	if self.frameLevel and self.frame.SetFrameLevel then
+		self.frame:SetFrameLevel(self.frameLevel)
+	end
 	self.animations = {}
 end
 
@@ -81,6 +86,12 @@ function widgetProto:Release()
 		self:OnRelease()
 		self.heap[self] = true
 	end
+end
+
+function widgetProto:CreateFrame(parent)
+	local frame = CreateFrame("Frame", nil, parent)
+	frame:SetSize(0.1, 0.1)
+	return frame
 end
 
 function widgetProto:OnAcquire()
@@ -162,6 +173,7 @@ end
 function widgetProto:AcquireAnimation(...)
 	local animation = addon:AcquireAnimation(self.frame, ...)
 	self.animations[animation] = true
+	animation:SetFrameLevel(self.frameLevel)
 	animation:Attach(self)
 	return animation
 end
@@ -211,8 +223,8 @@ end
 
 local iconWidgetProto = NewWidgetType('icon', 'abstract')
 
-function iconWidgetProto:CreateFrame(parent)
-	return parent:CreateTexture(nil, "ARTWORK")	
+function iconWidgetProto:CreateFrame(parent, name)
+	return parent:CreateTexture(name, "ARTWORK")	
 end
 
 local function SetColor(c, r, g, b, a)
@@ -330,8 +342,8 @@ end
 
 local edgeArrowProto = NewWidgetType('edge_arrow', 'abstract')
 
-function edgeArrowProto:CreateFrame(parent)
-	local f = addon:CreateTexture(parent, nil, "ARTWORK")
+function edgeArrowProto:CreateFrame(parent, name)
+	local f = addon:CreateTexture(parent, name, "OVERLAY")
 	f:SetSize(48, 48)
 	f:SetTexture([[Interface\Minimap\ROTATING-MINIMAPARROW]])
 	return f

@@ -70,6 +70,7 @@ end
 --------------------------------------------------------------------------------
 
 local pingWidgetProto, parentProto = addon.NewWidgetType('minimap_ping', 'abstract')
+pingWidgetProto.frameLevel = 9
 
 function pingWidgetProto:CreateFrame(parent)
 	local frame = CreateFrame("Frame", nil, parent)

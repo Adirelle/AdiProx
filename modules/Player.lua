@@ -17,17 +17,18 @@ end
 --------------------------------------------------------------------------------
 
 local proto, parentProto = addon.NewWidgetType('player_reticle', 'abstract')
+proto.frameLevel = 10
 
 function proto:CreateFrame(parent)
 	local frame = CreateFrame("Frame", nil, parent)
 	frame:SetAllPoints(parent)
 
-	local arrow = frame:CreateTexture(nil, "ARTWORK")
+	local arrow = frame:CreateTexture(nil, "OVERLAY")
 	arrow:SetTexture([[Interface\Minimap\MinimapArrow]])
 	arrow:SetSize(32, 32)
 	arrow:SetPoint("CENTER")
 
-	local text = frame:CreateFontString(nil, "ARTWORK", "SystemFont_Shadow_Small")
+	local text = frame:CreateFontString(nil, "OVERLAY", "SystemFont_Shadow_Small")
 	text:SetTextColor(0.7, 0.7, 0.7, 0.5)
 	text:SetPoint("BOTTOMRIGHT")
 	self.Text = text
