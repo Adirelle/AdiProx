@@ -12,7 +12,6 @@ local heap = {}
 local parentProto = CreateFrame("Frame")
 local proto = setmetatable({ Debug = addon.Debug }, { __index = parentProto })
 local meta = { __index = proto }
-local serial = 0
 
 function addon:AcquireAnimation(parent, ...)
 	local frame = next(heap)
@@ -30,8 +29,6 @@ function addon:AcquireAnimation(parent, ...)
 end
 
 function proto:OnCreate()
-	serial = serial + 1
-	self.name = "Animation"..serial
 	self:SetScript('OnShow', self.OnShow)
 	self:SetScript('OnHide', self.OnHide)	
 	self.Texture = addon:CreateTexture(self, nil, "ARTWORK")
