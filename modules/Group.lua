@@ -66,7 +66,6 @@ function partyWidgetProto:Update()
 	local name = self.Name
 	name:SetText(UnitName(unit))
 	name:SetTextColor(r, g, b, 0.75)
-	self:OnAlertChanged()
 
 	local symbol = GetRaidTargetIndex(unit)
 	local icon = self.Icon
@@ -83,6 +82,15 @@ function partyWidgetProto:Update()
 	end
 	
 	self:PLAYER_TARGET_CHANGED()
+end
+
+function partyWidgetProto:SetPoint(...)
+	parentProto.SetPoint(self, ...)
+	if self.position:GetAlert() then
+		self.Name:Show()
+	else
+		self.Name:Hide()
+	end
 end
 
 function partyWidgetProto:OnPositionChanged()
@@ -102,14 +110,6 @@ function partyWidgetProto:OnPositionChanged()
 		end
 		self.unit = unit
 		self:Update()
-	end
-end
-
-function partyWidgetProto:OnAlertChanged()
-	if self.alert then
-		self.Name:Show()
-	else
-		self.Name:Hide()
 	end
 end
 
