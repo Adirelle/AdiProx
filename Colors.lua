@@ -8,13 +8,13 @@ local addonName, addon = ...
 
 local COLORS = {
 	-- Gathered from Blizzard_CombatLog.lua
-	PHYSICIAL = { r = 1.0, g = 1.0, b = 0.0 },
-	HOLY      = { r = 1.0, g = 0.9, b = 0.5 },
-	FIRE      = { r = 1.0, g = 0.5, b = 0.0 },
-	NATURE    = { r = 0.3, g = 1.0, b = 0.3 },
-	FROST     = { r = 0.5, g = 1.0, b = 1.0 },
-	SHADOW    = { r = 0.5, g = 0.5, b = 1.0 },
-	ARCANE    = { r = 1.0, g = 0.5, b = 1.0 },
+	PHYSICAL = { r = 1.0, g = 1.0, b = 0.0 },
+	HOLY     = { r = 1.0, g = 0.9, b = 0.5 },
+	FIRE     = { r = 1.0, g = 0.5, b = 0.0 },
+	NATURE   = { r = 0.3, g = 1.0, b = 0.3 },
+	FROST    = { r = 0.5, g = 1.0, b = 1.0 },
+	SHADOW   = { r = 0.5, g = 0.5, b = 1.0 },
+	ARCANE   = { r = 1.0, g = 0.5, b = 1.0 },
 }
 addon.COLORS = COLORS
 
@@ -33,7 +33,7 @@ end
 
 -- Add some colors from font styles
 for _, key in pairs{"NORMAL", "HIGHLIGHT", "RED", "DIM_RED", "GREEN", "GRAY", "YELLOW", "LIGHTYELLOW", "ORANGE", "PASSIVE_SPELL"} do
-	COLORS[key] = _G[key.."_FONT_COLOR"])
+	COLORS[key] = _G[key.."_FONT_COLOR"]
 end
 
 -- Core of color: parse color definitiion, either:
