@@ -50,11 +50,11 @@ function mod:UpdateModules(event)
 			hasBoss = true
 		end
 	end
-	
+
 	-- Check each module
-	for _, module in self:IterateModules()do	
+	for _, module in self:IterateModules()do
 		local enable = false
-		
+
 		-- Check map-related modules
 		if module.maps then
 			local map = GetMapInfo()
@@ -66,27 +66,56 @@ function mod:UpdateModules(event)
 				end
 			end
 		end
-		
+
 		-- Check boss-related modules
 		if not enabled and hasBoss and module.bosses then
 			for i, mob in pairs(module.bosses) do
-				if mobUnits[mob] then				
-					self:Debug('Module', module, 'enabled for', mobUnits[mob])
+				if mobUnits[mob] then
 					enable = true
 					break
 				end
 			end
 		end
-		
+
 		-- Enable/disable as needed
 		if enable then
 			if not module:IsEnabled() then
+				self:Debug('Enabling encounter', module)
 				module:Enable()
 			end
 		elseif module:IsEnabled() then
+			self:Debug('Disabling encounter', module)
 			module:Disable()
 		end
 	end
+end
+
+--------------------------------------------------------------------------------
+-- Helpers
+--------------------------------------------------------------------------------
+
+local band = bit.band
+local schools = {
+	PHYSICAL = SCHOOL_MASK_PHYSICAL,
+	HOLY     = SCHOOL_MASK_HOLY,
+	FIRE     = SCHOOL_MASK_FIRE,
+	NATURE   = SCHOOL_MASK_NATURE,
+	FROST    = SCHOOL_MASK_FROST,
+	SHADOW   = SCHOOL_MASK_SHADOW,
+	ARCANE   = SCHOOL_MASK_ARCANE,
+}
+local function GetSchoolColor(spellSchool)
+	if spellSchool then
+		for school, mask in pairs(schools) do
+			if band(spellSchool, mask) ~= 0 then
+				return school
+			end
+		end
+	end
+end
+
+local function GetDebuffColor(spellId)
+	return (select(5, GetSpellInfo(spellId)))
 end
 
 --------------------------------------------------------------------------------
@@ -104,52 +133,117 @@ mod:SetDefaultModuleLibraries('LibCombatLogEvent-1.0', 'AceEvent-3.0', 'AceTimer
 
 function moduleProto:OnEnable()
 	if self.auras then
-		self:RegisterCombatLobEvent('SPELL_AURA_APPLIED', 'OnAuraApplied')
-		self:RegisterCombatLobEvent('SPELL_AURA_APPLIED_DOSE', 'OnAuraApplied')
-		self:RegisterCombatLobEvent('SPELL_AURA_REFRESH', 'OnAuraApplied')
-		self:RegisterCombatLobEvent('SPELL_AURA_REMOVED', 'OnAuraRemoved')
+		self:Debug('Watching auras')
+		self:RegisterCombatLogEvent('SPELL_AURA_APPLIED')
+		self:RegisterCombatLogEvent('SPELL_AURA_APPLIED_DOSE', 'SPELL_AURA_APPLIED')
+		self:RegisterCombatLogEvent('SPELL_AURA_REFRESH', 'SPELL_AURA_APPLIED')
+		self:RegisterCombatLogEvent('SPELL_AURA_REMOVED')
 	end
 	if self.spellCasts then
+		self:Debug('Watching spell casts')
 		self.currentCast = wipe(self.currentCast or {})
-		self:RegisterCombatLobEvent('SPELL_CAST_START')
-		self:RegisterCombatLobEvent('SPELL_CAST_SUCCESS')
+		self:RegisterCombatLogEvent('SPELL_CAST_START')
+		self:RegisterCombatLogEvent('SPELL_CAST_SUCCESS')
 	end
 	if self.PostEnable then
 		self:PostEnable()
 	end
 end
 
-function moduleProto:OnAuraApplied(event, args)
+function moduleProto:PlaceMarker(key, target, static, markerType, color, radius, duration)
+	if not target then return end
+	self:Debug('PlaceMarker(', "key=", key, "target=", target, "static=", static, "type=", markerType, "color=", color, "radius=", radius, "duration=", duration, ')')
+	local position = addon:GetUnitPosition(target)
+	if not position then
+		self:Debug('PlaceMarker: no position for', target, ', giving up')
+		return
+	end
+	if static then
+		position = position:GetStaticPosition()
+	end
+	local widget = position:GetWidget(key)
+	self:Debug('PlaceMarker: position=', position, 'existingMarker=', marker)
+	if radius then
+		local reverse = radius < 0
+		if reverse then
+			radius = -radius
+		end
+		position:SetAlertCondition(radius, reverse)
+	end
+	if not widget then
+		self:Debug('PlaceMarker: creating a new marker')
+		widget = self:AcquireWidget(markerType or (radius and "proximity") or "reticle", radius, duration, color)
+		widget:SetImportant(true)
+		position:Attach(key, widget)
+	else
+		self:Debug('PlaceMarker: refreshing the existing marker')
+		widget:Refresh(radius, duration)
+	end
+	return widget, position
+end
+
+function moduleProto:SPELL_AURA_APPLIED(event, args)
 	local aura = self.auras[args.spellId]
 	if aura then
-		local position = addon:GetUnitPosition(arg.destGUID)
-		if position then
-			local key = "aura"..args.spellId
-			local widget = position:GetWidget(key)
-			if not widget then
-				-- DO SOMETHING
-			end
-			-- DO SOMETHING
-			if self.PostAuraApplied then
-				self:PostAuraApplied(event, args, position, widget)
-			end
+		local color = aura.color or GetDebuffColor(args.spellId) or GetSchoolColor(args.spellSchool)
+		local widget, position = self:PlaceMarker("aura"..args.spellId, args.destGUID, aura.static, aura.marker, color, aura.range, aura.duration)
+		if widget and self.PostAuraApplied then
+			self:PostAuraApplied(event, args, position, widget)
 		end
 	end
 end
 
-function moduleProto:OnAuraRemoved(event, args)
+function moduleProto:SPELL_AURA_REMOVED(event, args)
 	if self.auras[args.spellId] then
-		local position = addon:GetUnitPosition(arg.destGUID)
+		local position = addon:GetUnitPosition(args.destGUID)
 		if position then
 			local widget = position:Detach("aura"..args.spellId)
-			if self.PostAuraRemoved then
+			if widget and self.PostAuraRemoved then
 				self:PostAuraRemoved(event, args, position, widget)
 			end
 		end
 	end
 end
 
--- Quite ugly, but quick
+function moduleProto:SPELL_CAST_START(event, args)
+	if self.spellCasts[args.spellId] then
+		wipe(self.currentCast)
+		for k, v in pairs(args) do
+			self.currentCast[k] = v
+		end
+		self:ScheduleTimer("GetSpellCastTarget", 0.1, self.currentCast)
+	end
+end
+
+function moduleProto:SPELL_CAST_SUCCESS(event, args)
+	if self.spellCasts[args.spellId] then
+		return self:OnSpellCast(event, args, 1)
+	end
+end
+
+function moduleProto:GetSpellCastTarget(args)
+	local unit = self:MobGUIDToUnit(args.sourceGUID) or addon.GetGUIDUnit(args.sourceGUID)
+	if not unit then return end
+	local target = gsub(unit.."target", "(%d+)target$", "target%1")
+	if target == "playertarget" then target = "target" end
+	local duration = (select(6, UnitCastingInfo(unit)) or 0) / 1000 - GetTime()
+	args.destName = UnitName(target)
+	args.destGUID = UnitGUID(target)
+	self:OnSpellCast(args.event, args, duration)
+	wipe(args)
+end
+
+function moduleProto:OnSpellCast(event, args, duration)
+	local spell = self.spellCasts[args.spellId]
+	if spell then
+		local color = spell.color or GetSchoolColor(args.spellSchool) or GetDebuffColor(args.spellID)
+		local widget, position = self:PlaceMarker("spell"..args.spellId, args.destGUID, spell.static, spell.marker, color, spell.range, spell.duration or duration)
+		if widget and self.PostSpellCast then
+			self:PostSpellCast(event, args, position, widget)
+		end
+	end
+end
+
 local UnitGUID, GetNumRaidMembers, GetNumPartyMembers = UnitGUID, GetNumRaidMembers, GetNumPartyMembers
 function moduleProto:MobGUIDToUnit(guid)
 	if not guid then return
@@ -170,54 +264,113 @@ function moduleProto:MobGUIDToUnit(guid)
 	end
 end
 
-function moduleProto:GetSpellCastTarget(args)
-	local unit = self:MobGUIDToUnit(args.sourceGUID)
-	if not unit then return end
-	local target = gsub(unit.."target", "(%d+)target$", "target%1")	
-	args.destName = UnitName(target)
-	args.destGUID = UnitGUID(target)
-	return self:OnSpellCast(args.event, args)
+--------------------------------------------------------------------------------
+-- Base widget
+--------------------------------------------------------------------------------
+
+local encounterProto, parentProto = addon.NewWidgetType("encounter", "abstract")
+encounterProto.frameLevel = 4
+
+function encounterProto:OnAcquire(texture, radius, duration, color)
+	self.duration, self.radius = nil, nil
+	parentProto.OnAcquire(self)
+	self.color = color
+	self.mainAnimation = self:AcquireAnimation(texture, radius, color)
+	self:Refresh(radius, duration)
 end
 
-function moduleProto:SPELL_CAST_START(event, args)
-	if self.spellCasts[args.spellId] then
-		wipe(self.currentCast)
-		for k, v in pairs(args) do
-			self.currentCast[k] = v
-		end
-		self:ScheduleTimer("GetSpellCastTarget", 0.1, self.currentCast)
-	end	
+function encounterProto:Refresh(radius, duration)
+	self:SetRadius(radius)
+	self:SetDuration(duration)
 end
 
-function moduleProto:SPELL_CAST_SUCCESS(event, args)
-	if self.spellCasts[args.spellId]  then
-		return self:OnSpellCast(event, args)
+function encounterProto:SetRadius(radius)
+	if self.radius ~= radius then
+		self.radius = radius
+		self:OnRadiusChanged(radius)		
 	end
+	return self
 end
 
-function moduleProto:OnSpellCast(event, args)
-	local spell = self.spellCasts[args.spellId] 
-	if spell then
-		local position = addon:GetUnitPosition(arg.destGUID)
-		if position then
-			local key = "spell"..args.spellId
-			local widget = position:GetWidget(key)
-			if not widget then
-				-- DO SOMETHING
-			end
-			if self.PostSpellCast then
-				self:PostSpellCast(event, args, position, widget)
-			end
-		end
+function encounterProto:SetDuration(duration)
+	if self.duration ~= duration then
+		self.duration = duration
+		self:OnDurationChanged(duration)		
+	end
+	return parentProto.SetDuration(self, duration)
+end
+
+function encounterProto:OnAlertChanged()
+	local color = self.alert and "RED" or self.color
+	for anim in pairs(self.animations) do
+		anim:SetColor(color)
 	end
 end
 
 --------------------------------------------------------------------------------
--- Encounter widgets
+-- Reticle widget
 --------------------------------------------------------------------------------
 
-local reticleProto, parentProto = addon.NewWidgetType("reticle", "abstract")
+local reticleProto, parentProto = addon.NewWidgetType("reticle", "encounter")
 
-function reticleProto:OnCreateFrame(parent)
-	local frame = 
+function reticleProto:OnAcquire(radius, duration, color)
+	self.radius = nil
+	parentProto.OnAcquire(self, "targeting", radius, duration, color)
+	self.mainAnimation:Rotate(360, 2)
+end
+
+function reticleProto:SetRadius(radius)
+	return parentProto.SetRadius(self, radius or 24)
+end
+
+function reticleProto:OnRadiusChanged(radius)
+	for anim in pairs(self.animations) do
+		anim:SetSize(radius)
+	end
+end
+
+function reticleProto:OnDurationChanged(duration)
+	local anim = self.mainAnimation
+	if duration then
+		anim:Pulse(-1, duration)
+	else
+		anim:Rotate()
+	end
+end
+
+--------------------------------------------------------------------------------
+-- Proximity widget
+--------------------------------------------------------------------------------
+
+local rangeProto, parentProto = addon.NewWidgetType("proximity", "encounter")
+
+function rangeProto:OnAcquire(radius, duration, color)
+	self.pixelsPerYard = nil
+	parentProto.OnAcquire(self, "highlight", radius, duration, color)
+end
+
+function rangeProto:OnRadiusChanged(radius)
+	addon.forceUpdate = true
+end
+
+function rangeProto:OnDurationChanged(duration)
+	local anim = self.mainAnimation
+	if duration then
+		anim:SetTexture("timer")
+		anim:Rotate(-360, duration)
+	else
+		anim:SetTexture("highlight")
+		anim:Rotate()
+	end
+end
+
+function rangeProto:SetPoint(x, y, pixelsPerYard, ...)
+	parentProto.SetPoint(self, x, y, pixelsPerYard, ...)
+	if pixelsPerYard ~= self.pixelsPerYard then
+		self.pixelsPerYard = pixelsPerYard
+		local size = 2 * self.radius * pixelsPerYard
+		for anim in pairs(self.animations) do
+			anim:SetSize(size)
+		end
+	end
 end
