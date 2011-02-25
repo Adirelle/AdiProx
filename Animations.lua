@@ -34,8 +34,8 @@ function proto:OnCreate()
 	self.name = "Animation"..serial
 	self:SetScript('OnShow', self.OnShow)
 	self:SetScript('OnHide', self.OnHide)	
-	self.Texture = self:CreateTexture(nil, "ARTWORK")
-	self.Texture:SetAllPoints(self)	
+	self.Texture = addon:CreateTexture(self, nil, "ARTWORK")
+	self.Texture:SetPoint("CENTER")	
 	
 	local pulseGroup = self:CreateAnimationGroup()
 	local pulseAnim = pulseGroup:CreateAnimation("Scale") 
@@ -80,17 +80,12 @@ end
 
 function proto:OnAcquire(texture, size, r, g, b, a, blendMode)
 	if texture then
-		self:SetTexture(texture)
-	end
-	if size then
-		self:SetSize(size)
-	end
-	if r and g and b and a then
-		self:SetColor(r, g, b, a)
+		self:SetTexture(texture, blendMode)
 	else
-		self:SetColor(1, 1, 1, 1)
+		self:SetTexture([[Tileset\Generic\Checkers]], "ADD")
 	end
-	self:SetBlendMode(blendMode or "BLEND")
+	self:SetSize(size or 16)
+	self:SetColor(r, g, b, a)
 	self:Show()
 end
 
@@ -126,13 +121,23 @@ function proto:Rotate(degrees, duration)
 	return self
 end
 
+function proto:UpdateTextureSize()
+	local w, h = self:GetSize()
+	if w and h then
+		local sizeModifier = self.Texture.sizeModifier or 1
+		self.Texture:SetSize(w * sizeModifier, h * sizeModifier)
+	end
+end
+
 function proto:SetSize(size)
 	parentProto.SetSize(self, size, size)
+	self:UpdateTextureSize()
 	return self
 end
 
 function proto:SetTexture(...)
 	self.Texture:SetTexture(...)
+	self:UpdateTextureSize()
 	return self
 end
 
