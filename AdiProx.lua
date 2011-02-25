@@ -180,16 +180,13 @@ function addon:OnUpdate(elapsed)
 	local showMe = IsShiftKeyDown()
 	local rotangle = 2 * math.pi - GetPlayerFacing()
 	local maxRange = ZOOM_GRANULARITY
+
+	playerPos:ResetAlerts()
 	
 	for position in self:IterateActivePositions() do
 		local valid, distance, zoomRange = position:UpdateRelativeCoords(px, py, rotangle)
 		if valid then
-			if playerPos:TestAlert(distance) then
-				playerPos:SetAlert(true)
-				position:SetAlert(true)
-			else
-				position:SetAlert(position:TestAlert(distance))
-			end
+			position:UpdateAlerts(distance, playerPos:UpdateAlerts(distance))
 			if position:IsImportant() then
 				showMe = true
 				maxRange = max(maxRange, zoomRange * 1.1)

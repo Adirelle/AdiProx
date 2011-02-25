@@ -154,11 +154,29 @@ function widgetProto:SetDuration(duration)
 	return self:SetExpires(duration and GetTime() + duration or nil)
 end
 
+function widgetProto:SetAlertRadius(radius, reverse)
+	reverse = not not reverse
+	if self.alertRadius ~= radius or self.alertReverse ~= reverse then
+		self.alertRadius, self.alertReverse = radius, reverse
+		addon.forceUpdate = true
+	end
+	return self
+end
+
+function widgetProto:TestAlert(distance)
+	if distance and self.alertRadius then
+		if self.alertReverse then
+			return distance > self.alertRadius
+		else
+			return distance <= self.alertRadius
+		end
+	end
+end
+
 function widgetProto:SetAlert(alert)
 	alert = not not alert
 	if alert ~= self.alert then
 		self.alert = alert
-		addon.forceUpdate = true
 		self:OnAlertChanged()
 	end
 	return self
@@ -194,7 +212,6 @@ function widgetProto:SetPosition(position)
 		end
 		self.x, self.y = nil, nil
 		self:OnPositionChanged()
-		self:SetAlert(position and position.alert)
 		if position then
 			self:Show()
 		else

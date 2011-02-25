@@ -95,33 +95,31 @@ function positionProto:IterateWidgets()
 	return pairs(self.widgets)
 end
 
-function positionProto:SetAlertCondition(distance, invert)
-	self.alertDistance, self.alertInvert = distance, invert
-	return self
-end
-
-function positionProto:GetAlertCondition()
-	return self.alertDistance, self.alertInvert
-end
-
-function positionProto:TestAlert(distance)
-	if distance and self.alertDistance then
-		if self.alertInvert then
-			return distance > self.alertDistance
+function positionProto:UpdateAlerts(distance, defaultState)
+	local alert = defaultState
+	for name, widget in pairs(self.widgets) do
+		if widget:TestAlert(distance) then
+			widget:SetAlert(true)
+			alert = true
 		else
-			return distance <= self.alertDistance
+			widget:SetAlert(false)
 		end
 	end
+	self:SetAlert(alert)
+	return alert
 end
 
 function positionProto:SetAlert(alert)
+	alert = not not alert
 	if alert ~= self.alert then
 		self.alert = alert
-		for name, widget in pairs(self.widgets) do
-			widget:SetAlert(alert)
-		end
+		addon.forceUpdate = true
 	end
 	return self
+end
+
+function positionProto:GetAlert()
+	return self.alert
 end
 
 local cos, sin, max, abs = math.cos, math.sin, math.max, math.abs
@@ -298,6 +296,25 @@ end
 
 function playerPositionProto:UpdateRelativeCoords()	
 	return false -- NOOP
+end
+
+function playerPositionProto:ResetAlerts()
+	self.alert = false
+	for name, widget in pairs(self.widgets) do
+		widget:SetAlert(false)
+	end
+end
+
+function playerPositionProto:UpdateAlerts(distance)
+	local alert = false
+	for name, widget in pairs(self.widgets) do
+		if widget:TestAlert(distance) then
+			widget:SetAlert(true)
+			self.alert = true
+			alert = true
+		end
+	end
+	return alert
 end
 
 function playerPositionProto:LayoutWidgets(zoomRange, pixelsPerYard)
