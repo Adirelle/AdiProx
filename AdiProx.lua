@@ -177,7 +177,7 @@ function addon:OnUpdate(elapsed)
 		widget:OnUpdate(now)		
 	end
 
-	local showMe = false
+	local showMe = IsShiftKeyDown()
 	local rotangle = 2 * math.pi - GetPlayerFacing()
 	local maxRange = ZOOM_GRANULARITY
 	
@@ -202,7 +202,7 @@ function addon:OnUpdate(elapsed)
 		showMe = true
 	end
 	
-	if not showMe and not IsShiftKeyDown() then
+	if not showMe then
 		self.forceUpdate = nil
 		return self.frame:Hide()
 	end
@@ -233,14 +233,14 @@ function addon:OnUpdate(elapsed)
 	local pixelsPerYard = (self.container:GetWidth() - 16) / (actualZoom * 2)
 	
 	-- Layout widgets
-	showMe = false
+	showMe = IsShiftKeyDown()
 	for position in self:IterateActivePositions() do
 		if position:LayoutWidgets(actualZoom, pixelsPerYard) then
 			showMe = true
 		end
 	end
 	
-	if showMe or IsShiftKeyDown() then
+	if showMe then
 		-- Really show the frame
 		self.frame:Show()
 	else
