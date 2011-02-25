@@ -2,5 +2,19 @@
 ..\FrameXML\UI.xsd">
 
 	<Script file="Test.lua"/>
+	
+	<!-- 5-man dungeons -->
+	
+	<!-- Nothing worth displaying
+	<Script file="party\BlackrockCaverns.lua"/>
+	<Script file="party\ShadowFangKeep.lua"/>
+	<Script file="party\TheStonecore.lua"/>
+	<Script file="party\ThroneOfTides.lua"/>
+	-->
+	<Script file="party\Deadmines.lua"/>
+	<Script file="party\GrimBatol.lua"/>
+	<Script file="party\HallsOfOrigination.lua"/>
+	<Script file="party\LostCityOfTheTolvir.lua"/>
+	<Script file="party\TheVortexPinnacle.lua"/>
 
 </Ui>

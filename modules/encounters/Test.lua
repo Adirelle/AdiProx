@@ -5,23 +5,12 @@ All rights reserved.
 --]]
 
 local addonName, addon = ...
-local L = addon.L
 
-local LibMapData = LibStub('LibMapData-1.0')
+addon:NewEncounterModule('Test')
+	:InMaps("Orgrimmar")
+	-- Restokin-based tests
+	:WatchAuras(33763) -- Lifebloom
+	:WatchSpellCasts(18562, { range = 9, static = true, duration = 7.5 }) -- Swiftmend
+	:WatchSpellCasts(5185) -- Healing Touch
+	:WatchSpellCasts(8936, { duration = 6, atEnd = true }) -- Regrowth
 
-local mod = addon:NewEncounterModule('Test')
-mod.maps = { "Orgrimmar" }
-
-mod.auras = {
-	-- Lifebloom
-	[33763] = { duration = 10 },
-	-- Regrowth
-	[8936] = { range = 5 },
-}
-
-mod.spellCasts = {
-	-- Swiftmend
-	[18562] = { range = 9, static = true, duration = 7.5 },
-	-- Healing Touch
-	[5185] = { range = 8 },
-}
