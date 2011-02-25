@@ -26,17 +26,27 @@ function addon:NewEncounterModule(...)
 	return mod:NewModule(...)
 end
 
-local bossIDs = {}
+local function GetMobID(guid)
+	if guid then
+	-- 0x??A?BBBBB??????? with B being the NPC id if the GUID type (A) is either 3 or B
+		local mobID = strmatch(guid, "0x%x%x[3B]%x(%x%x%x%x%x)%x%x%x%x%x%x%x")
+		if mobID then
+			return tonumber(mobID, 16)
+		end
+	end
+end
+
+local mobUnits = {}
 function mod:UpdateModules(event)
 	self:Debug('UpdateModules', event)
 
 	-- Fetch boss IDS from boss units, if any
-	wipe(bossIDs)
+	wipe(mobUnits)
 	local hasBoss = false
 	for i = 1, 4 do
-		local guid = UnitGUID("boss"..i)
-		if guid then
-			bossIDs[tonumber(strsub(guid, 7, 10), 16)] = UnitName("boss"..i)
+		local mobID = GetMobID(UnitGUID("boss"..i))
+		if mobID then
+			mobUnits[mobID] = "boss"..i
 			hasBoss = true
 		end
 	end
@@ -60,8 +70,8 @@ function mod:UpdateModules(event)
 		-- Check boss-related modules
 		if not enabled and hasBoss and module.bosses then
 			for i, mob in pairs(module.bosses) do
-				if bossIDs[mob] then				
-					self:Debug('Module', module, 'enabled for', bossIDs[mob])
+				if mobUnits[mob] then				
+					self:Debug('Module', module, 'enabled for', mobUnits[mob])
 					enable = true
 					break
 				end
@@ -91,4 +101,56 @@ end
 mod:SetDefaultModulePrototype(moduleProto)
 mod:SetDefaultModuleState(false)
 mod:SetDefaultModuleLibraries('LibCombatLogEvent-1.0')
+
+function moduleProto:OnEnable()
+	if self.auras then
+		self:RegisterCombatLobEvent('SPELL_AURA_APPLIED', 'OnAuraApplied')
+		self:RegisterCombatLobEvent('SPELL_AURA_REFRESH', 'OnAuraApplied')
+		self:RegisterCombatLobEvent('SPELL_AURA_REMOVED', 'OnAuraRemoved')
+	end
+	if self.PostEnable then
+		self:PostEnable()
+	end
+end
+
+function moduleProto:GetMobUnit(mobID)
+	if mobUnits[mobID] then
+		return mobUnits[mobID]
+	elseif GetMobID(UnitGUID("target")) == mobID then
+		return "target"
+	elseif GetMobID(UnitGUID("focus")) == mobID then
+		return "focus"
+	end
+end
+
+function moduleProto:OnAuraApplied(event, args)
+	local aura = self.auras[args.spellId]
+	if aura then
+		local position = addon:GetUnitPosition(arg.destGUID)
+		if position then
+			local key = "aura"..args.spellId
+			local widget = position:GetWidget(key)
+			if not widget then
+				-- DO SOMETHING
+			elseif event == "SPELL_AURA_REFRESH" then
+				-- DO SOMETHING
+			end
+			if self.PostAuraApplied then
+				self:PostAuraApplied(event, args, position, widget)
+			end
+		end
+	end
+end
+
+function moduleProto:OnAuraRemoved(event, args)
+	if self.auras[args.spellId] then
+		local position = addon:GetUnitPosition(arg.destGUID)
+		if position then
+			local widget = position:Detach("aura"..args.spellId)
+			if self.PostAuraRemoved then
+				self:PostAuraRemoved(event, args, position, widget)
+			end
+		end
+	end
+end
 
