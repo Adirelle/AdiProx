@@ -17,4 +17,8 @@
 	<Script file="party\LostCityOfTheTolvir.lua"/>
 	<Script file="party\TheVortexPinnacle.lua"/>
 
+	<!-- Raid dungeons -->
+	<Script file="raid\BlackwingDescent.lua"/>
+	<Script file="raid\BastionTwilight.lua"/>
+	
 </Ui>
