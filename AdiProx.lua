@@ -128,8 +128,11 @@ function addon:Reconfigure()
 end
 
 function addon:MapChanged(event, map, floor)
-	self.currentMap, self.currentFloor = map, floor
-	self.forceUpdate = true
+	if self.currentMap ~= map or self.currentFloor ~= floor then
+		self.currentMap, self.currentFloor = map, floor
+		self.forceUpdate = true
+		self:SendMessage('AdiProx_MapChanged', map, floor)
+	end
 end
 
 function addon:ShouldEnable()
