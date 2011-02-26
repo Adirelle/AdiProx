@@ -34,6 +34,10 @@ local DEFAULT_SETTINGS = {
 	profile = {
 		enabled = true,
 		modules = { ['*'] = true },
+		opacity = 1.0,
+		backgroundOpacity = 0.8,
+		scale = 1.0,
+		autoHide = true,
 	}
 }
 
@@ -142,6 +146,11 @@ function addon:UpdateEnabledState(...)
 end
 
 function addon.OnConfigChanged()
+	local frame = addon.frame
+	frame:SetAlpha(prefs.opacity)
+	frame:SetBackdropColor(0, 0, 0, prefs.backgroundOpacity)
+	frame:SetBackdropBorderColor(1, 1, 1, prefs.backgroundOpacity)	
+	frame:SetScale(prefs.scale)
 	addon.forceUpdate = true
 end
 
@@ -208,7 +217,7 @@ function addon:OnUpdate(elapsed)
 		widget:OnUpdate(now)		
 	end
 
-	local showMe = IsShiftKeyDown()
+	local showMe = not prefs.autoHide or IsShiftKeyDown()
 	local rotangle = 2 * math.pi - GetPlayerFacing()
 	local maxRange = ZOOM_GRANULARITY
 
@@ -261,7 +270,7 @@ function addon:OnUpdate(elapsed)
 	local pixelsPerYard = (self.container:GetWidth() - 16) / (actualZoom * 2)
 	
 	-- Layout widgets
-	showMe = IsShiftKeyDown()
+	showMe = not prefs.autoHide or IsShiftKeyDown()
 	for position in self:IterateActivePositions() do
 		if position:LayoutWidgets(actualZoom, pixelsPerYard) then
 			showMe = true

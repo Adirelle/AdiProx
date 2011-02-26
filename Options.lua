@@ -92,6 +92,37 @@ function addon.GetOptions()
 							addon:UpdateEnabledState()
 						end,
 					},
+					opacity = {
+						name = L['Opacity'],
+						type = 'range',
+						isPercent = true,
+						min = 0.10,
+						max = 1,
+						step = 0.01,
+						order = 30,
+					},
+					backgroundOpacity = {
+						name = L['Background opacity'],
+						type = 'range',
+						isPercent = true,
+						min = 0,
+						max = 1,
+						step = 0.01,
+						order = 40,
+					},
+					scale = {
+						name = L['Scale'],
+						type = 'range',
+						min = 0.5,
+						max = 2.0,
+						step = 0.05,
+						order = 50,
+					},
+					autoHide = {
+						name = L['Hide automatically'],
+						type = 'toggle',
+						order = 60,
+					},
 				}
 			},
 			profiles = profileOpts,
