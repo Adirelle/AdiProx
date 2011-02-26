@@ -6,7 +6,7 @@ All rights reserved.
 
 local addonName, addon = ...
 
-addon:NewEncounterModule('Halls Of Origination - Water warden')
+addon:NewEncounterModule('Halls of Origination/Water warden')
 	:AgainstMobs(39802)
 	:WatchAuras(77336, 91158) -- Bubble Bound
 

@@ -7,24 +7,57 @@ All rights reserved.
 local addonName, addon = ...
 local L = addon.L
 
-local LibMapData = LibStub('LibMapData-1.0')
+local mod = addon:NewModule('Encounters')
 
-local mod = addon:NewModule('Encounters', 'AceEvent-3.0')
-
-function mod:OnEnable()
-	self:RegisterEvent('PLAYER_ENTERING_WORLD', 'UpdateModules')
-	self:RegisterEvent('INSTANCE_ENCOUNTER_ENGAGE_UNIT', 'UpdateModules')
-	LibMapData.RegisterCallback(self, 'MapChanged', 'UpdateModules')
-	self:UpdateModules("OnEnable")
+local function GetSlug(name)
+	return name and gsub(name, "%W+", "")
 end
 
-function mod:PostDisable()
-	LibMapData.UnregisterAllCallbacks(self)
+function addon:NewEncounterModule(name, ...)
+	local instance, encounter = strsplit('/', name)
+	local newMod = mod:NewModule(GetSlug(name), ...)
+	newMod.instance = strtrim(instance)
+	newMod.encounter = encounter and strtrim(encounter)
+	return newMod 
 end
 
-function addon:NewEncounterModule(...)
-	return mod:NewModule(...)
+function mod:GetOptions()
+	local options = { args = { } }
+	local BZ = LibStub('LibBabble-Zone-3.0', true)
+	local BB = LibStub('LibBabble-Boss-3.0', true)
+	local LBZ = BZ and BZ:GetUnstrictLookupTable() or {}
+	local LBB = BZ and BB:GetUnstrictLookupTable() or {}
+	local instances = {}
+	for name, module in self:IterateModules() do
+		local instance, encounter = module.instance, module.encounter
+		local instanceOpts = instances[instance]
+		if not instanceOpts then
+			instanceOpts = {
+				name = LBZ[instance] or instance,
+				type = 'group',
+				args = {},
+			}
+			instances[instance] = instanceOpts
+			options.args[GetSlug(instance)] = instanceOpts
+		end
+		local rawOpts = module.GetOptions and module:GetOptions() or {}
+		local opts = addon.DecorateOptions(module, rawOpts)
+		opts.inline = true
+		if encounter then
+			opts.name = LBB[encounter] or encounter
+			instanceOpts.args[GetSlug(encounter)] = opts
+		else
+			opts.name = L["General"]
+			opts.order = 5
+			instanceOpts.args.general = opts
+		end
+	end
+	return options
 end
+
+--------------------------------------------------------------------------------
+-- Helpers
+--------------------------------------------------------------------------------
 
 local function GetMobID(guid)
 	if guid then
@@ -35,64 +68,6 @@ local function GetMobID(guid)
 		end
 	end
 end
-
-local mobUnits = {}
-function mod:UpdateModules(event)
-	self:Debug('UpdateModules', event)
-
-	-- Fetch boss IDS from boss units, if any
-	wipe(mobUnits)
-	local hasBoss = false
-	for i = 1, 4 do
-		local mobID = GetMobID(UnitGUID("boss"..i))
-		if mobID then
-			mobUnits[mobID] = "boss"..i
-			hasBoss = true
-		end
-	end
-
-	-- Check each module
-	for _, module in self:IterateModules()do
-		local enable = false
-
-		-- Check map-related modules
-		if module.maps then
-			local map = GetMapInfo()
-			for i, zone in pairs(module.maps) do
-				if zone == map then
-					self:Debug('Module', module, 'enabled in', zone)
-					enable = true
-					break
-				end
-			end
-		end
-
-		-- Check boss-related modules
-		if not enabled and hasBoss and module.mobs then
-			for i, mob in pairs(module.mobs) do
-				if mobUnits[mob] then
-					enable = true
-					break
-				end
-			end
-		end
-
-		-- Enable/disable as needed
-		if enable then
-			if not module:IsEnabled() then
-				self:Debug('Enabling encounter', module)
-				module:Enable()
-			end
-		elseif module:IsEnabled() then
-			self:Debug('Disabling encounter', module)
-			module:Disable()
-		end
-	end
-end
-
---------------------------------------------------------------------------------
--- Helpers
---------------------------------------------------------------------------------
 
 local band = bit.band
 local schools = {
@@ -127,26 +102,46 @@ for k, v in pairs(addon.moduleProto) do
 	moduleProto[k] = v
 end
 
+moduleProto.core = mod
+
 mod:SetDefaultModulePrototype(moduleProto)
 mod:SetDefaultModuleState(false)
 mod:SetDefaultModuleLibraries('LibCombatLogEvent-1.0', 'AceEvent-3.0', 'AceTimer-3.0')
 
+function moduleProto:ShouldEnable()
+	if addon.moduleProto.ShouldEnable(self) then
+		if self.maps and self.maps[GetMapInfo()] then
+			return true
+		end
+		if self.mobs then
+			for i = 1, 4 do
+				local id = GetMobID(UnitGUID("boss"..i))
+				if self.mobs[id] then
+					return true
+				end
+			end
+		end
+	end
+	return false
+end
+
 -- Definition helpers
 
-local function MergeList(self, key, ...)
+local function MergeSet(self, key, ...)
 	local t = self[key]
 	if not t then
 		t = {}
 		self[key] = t
 	end
 	for i = 1, select('#', ...) do
-		tinsert(t, (select(i, ...)))
+		local value = select(i, ...)
+		t[value] = true
 	end
 	return self
 end
 
 local DEFAULT_DEF = {}
-local function MergeData(self, key, ...)
+local function MergeDict(self, key, ...)
 	local t = self[key]
 	if not t then
 		t = {}
@@ -165,15 +160,26 @@ local function MergeData(self, key, ...)
 	return self
 end
 
-function moduleProto:AgainstMobs(...) return MergeList(self, "mobs", ...) end
-function moduleProto:InMaps(...) return MergeList(self, "maps", ...) end
+function moduleProto:AgainstMobs(...) return MergeSet(self, "mobs", ...) end
+function moduleProto:InMaps(...) return MergeSet(self, "maps", ...) end
 
-function moduleProto:WatchAuras(...) return MergeData(self, "auras", ...) end
-function moduleProto:WatchSpellCasts(...) return MergeData(self, "spellCasts", ...) end
+function moduleProto:WatchAuras(...) return MergeDict(self, "auras", ...) end
+function moduleProto:WatchSpellCasts(...) return MergeDict(self, "spellCasts", ...) end
 
 -- Enabling
 
-function moduleProto:OnEnable()
+function moduleProto:PostInitialize()
+	local function UpdateEnabledState(...) return self:UpdateEnabledState(...) end
+	self.RegisterEvent(self.name, 'PLAYER_ENTERING_WORLD', UpdateEnabledState)
+	if self.mobs then
+		self.RegisterEvent(self.name, 'INSTANCE_ENCOUNTER_ENGAGE_UNIT', UpdateEnabledState)
+	end
+	if self.maps then
+		self.RegisterMessage(self.name, 'AdiProx_MapChanged', UpdateEnabledState)
+	end
+end
+
+function moduleProto:PostEnable()
 	if self.auras then
 		self:Debug('Watching auras')
 		self:RegisterCombatLogEvent('SPELL_AURA_APPLIED')
@@ -186,9 +192,6 @@ function moduleProto:OnEnable()
 		self.currentCast = wipe(self.currentCast or {})
 		self:RegisterCombatLogEvent('SPELL_CAST_START')
 		self:RegisterCombatLogEvent('SPELL_CAST_SUCCESS')
-	end
-	if self.PostEnable then
-		self:PostEnable()
 	end
 end
 

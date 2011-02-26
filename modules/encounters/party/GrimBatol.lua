@@ -6,7 +6,7 @@ All rights reserved.
 
 local addonName, addon = ...
 
-addon:NewEncounterModule('Grim Batol - Erudax')
+addon:NewEncounterModule('Grim Batol/Erudax')
 	:AgainstMobs(40484)
 	:WatchSpellCasts(75861, 91079, { range = 10, static = true }) -- Binding Shadows
 
