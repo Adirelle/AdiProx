@@ -7,7 +7,7 @@ All rights reserved.
 local addonName, addon = ...
 local L = addon.L
 
-LibStub('AceAddon-3.0'):NewAddon(addon, addonName, 'AceEvent-3.0')
+LibStub('AceAddon-3.0'):NewAddon(addon, addonName, 'AceEvent-3.0', 'AceConsole-3.0')
 --@debug@
 _G[addonName] = addon
 --@end-debug@
@@ -30,7 +30,12 @@ end
 -- Default settings
 --------------------------------------------------------------------------------
 
-local DEFAULT_SETTINGS = {}
+local DEFAULT_SETTINGS = {
+	profile = {
+		enabled = true,
+		modules = { ['*'] = true },
+	}
+}
 
 --------------------------------------------------------------------------------
 -- Upvalues and constants
@@ -63,24 +68,29 @@ function addon:OnInitialize()
 	LibStub('AceConfig-3.0'):RegisterOptionsTable(addonName, self.GetOptions)
 	self.blizPanel = LibStub('AceConfigDialog-3.0'):AddToBlizOptions(addonName, addonName)
 
-	--self:RegisterChatCommand("acm", "ChatCommand", true)
-	--self:RegisterChatCommand(addonName, "ChatCommand", true)
+	self:RegisterChatCommand("acm", "ChatCommand", true)
+	self:RegisterChatCommand(addonName, "ChatCommand", true)
+	
+	self.RegisterMessage(addonName, 'AdiProx_ConfigChanged_AdiProx', self.OnConfigChanged)
+	
+	self:SetEnabledState(self:ShouldEnable())
 end
 
 function addon:OnEnable()
 	prefs = self.db.profile
-	self:Debug('OnEnable')
 
 	if not self.frame then
 		self:CreateTheFrame()
 	end
-	self.frame:Show()
+	self.forceUpdate = true
 
 	if not self.updateFrame then
 		self.updateFrame = CreateFrame("Frame")
 		self.updateFrame:SetScript('OnUpdate', function(_, elapsed) return self:OnUpdate(elapsed) end)
 	end
 	self.updateFrame:Show()
+
+	self:OnConfigChanged()
 
 	self.zoomRange = ZOOM_GRANULARITY
 
@@ -116,6 +126,27 @@ end
 function addon:MapChanged(event, map, floor)
 	self.currentMap, self.currentFloor = map, floor
 	self.forceUpdate = true
+end
+
+function addon:ShouldEnable()
+	return prefs.enabled
+end
+
+function addon:UpdateEnabledState(...)
+	local enable = self:ShouldEnable()
+	if enable and not self:IsEnabled() then
+		self:Enable()
+	elseif not enable and self:IsEnabled() then 
+		self:Disable()
+	end
+end
+
+function addon.OnConfigChanged()
+	addon.forceUpdate = true
+end
+
+function addon:ChatCommand()
+	InterfaceOptionsFrame_OpenToCategory(self.blizPanel)
 end
 
 --------------------------------------------------------------------------------
@@ -266,13 +297,41 @@ end
 -- Module prototype
 --------------------------------------------------------------------------------
 
-local moduleProto = { Debug = addon.Debug }
+local moduleProto = { Debug = addon.Debug, core = addon }
 addon:SetDefaultModulePrototype(moduleProto)
 addon.moduleProto = moduleProto
+
+function moduleProto:OnInitialize()
+	if self.GetOptions then
+		self.db = addon.db:RegisterNamespace(self.name, self.default_db)
+	end
+	local enable = self:ShouldEnable()
+	self:SetEnabledState(enable)
+	if self.PostInitialize then
+		self:PostInitialize()
+	end
+end
+
+function moduleProto:ShouldEnable()
+	return self.core:ShouldEnable() and prefs.modules[self.name]
+end 
+
+moduleProto.UpdateEnabledState = addon.UpdateEnabledState
+
+function moduleProto:OnEnable()
+	if self.OnConfigChanged then
+		self:RegisterMessage('AdiProx_ConfigChanged_'..self.name, 'OnConfigChanged')
+	end
+	if self.PostEnable then
+		self:PostEnable()
+	end
+	self:Debug('Enabled')
+end
 
 function moduleProto:OnDisable()
 	self:ReleaseAllWidgets()
 	if self.PostDisable then
 		self:PostDisable()
 	end
+	self:Debug('Disabled')
 end

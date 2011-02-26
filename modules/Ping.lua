@@ -11,7 +11,7 @@ local mod = addon:NewModule('Ping', 'AceEvent-3.0')
 
 local LibMapData = LibStub('LibMapData-1.0')
 
-function mod:OnEnable()
+function mod:PostEnable()
 	self:RegisterEvent('MINIMAP_PING')
 	self:RegisterEvent('MINIMAP_UPDATE_ZOOM')
 	self:MINIMAP_UPDATE_ZOOM()

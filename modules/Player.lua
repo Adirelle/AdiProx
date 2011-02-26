@@ -7,7 +7,7 @@ All rights reserved.
 local addonName, addon = ...
 local mod = addon:NewModule('Player')
 
-function mod:OnEnable()
+function mod:PostEnable()
 	self:Debug('OnEnable')
 	addon:GetUnitPosition("player"):Attach("reticle", self:AcquireWidget("player_reticle"))
 end

@@ -9,8 +9,8 @@ local L = addon.L
 
 local mod = addon:NewModule('Group', 'AceEvent-3.0')
 
-function mod:OnEnable()
-	self:RegisterMessage('AdiProx_GroupChanged', "Update")
+function mod:PostEnable()
+	self:RegisterMessage('AdiProx_GroupChanged', 'Update')
 	self:RegisterMessage('AdiProx_ClassColorsChanged', 'Update')
 	self:Update()
 end
