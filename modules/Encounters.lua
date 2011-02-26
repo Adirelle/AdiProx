@@ -362,7 +362,7 @@ end
 local reticleProto, parentProto = addon.NewWidgetType("reticle", "encounter")
 
 function reticleProto:OnAcquire(radius, duration, color)
-	self.radius = nil
+	self.durationAnimation = nil
 	parentProto.OnAcquire(self, "targeting", radius, duration, color)
 	self.mainAnimation:Rotate(360, 2)
 end
@@ -378,11 +378,14 @@ function reticleProto:OnRadiusChanged(radius)
 end
 
 function reticleProto:OnDurationChanged(duration)
-	local anim = self.mainAnimation
+	self:Debug("OnDurationChanged", duration)
 	if duration then
-		anim:Pulse(-1, duration)
-	else
-		anim:Rotate()
+		if not self.durationAnimation then
+			self.durationAnimation = self:AcquireAnimation("fuzzyring", self.radius, self.color)
+		end
+		self.durationAnimation:Pulse(-0.5, duration)
+	elseif self.durationAnimation then
+		self.durationAnimation = self:ReleaseAnimation(self.durationAnimation)
 	end
 end
 
