@@ -27,10 +27,14 @@ local texParentProto = UIParent:CreateTexture()
 local texProto = setmetatable({}, { __index = texParentProto })
 local texMeta = { __index = texProto }
 
-function addon:CreateTexture(parent, ...)
-	local t = setmetatable(parent:CreateTexture(...), texMeta)
-	t.angle, t.sizeModifier, t.texCoord = 0, DEFAULT_TEXTURE.sizeModifier, DEFAULT_TEXTURE.texCoord
+function addon:CreateTexture(parent, name, layer, inherits, sublevel)
+	local t = setmetatable(parent:CreateTexture(name, layer, inherits, sublevel), texMeta)
+	t:Reset()
 	return t
+end
+
+function texProto:Reset()
+	t.sizeModifier, t.texCoord = DEFAULT_TEXTURE.sizeModifier, DEFAULT_TEXTURE.texCoord
 end
 
 function texProto:SetTexture(texture, ...)
@@ -47,6 +51,10 @@ function texProto:SetTexture(texture, ...)
 	end
 end
 
+function texProto:GetSizeModifier()
+	return t.sizeModifier
+end
+
 local ParseColor = addon.ParseColor
 function texProto:SetVertexColor(...)
 	return texParentProto.SetVertexColor(self, ParseColor(...))
@@ -56,7 +64,36 @@ function texProto:DrawRouteLine(sx, sy, ex, ey, width, anchor, relPoint)
 	return DrawRouteLine(self, anchor or self:GetParent(), sx, sy, ex, ey, width, relPoint)
 end
 
+-- Texture recycling
+
+local heap = {}
+
+local function Texture_Release(self)
+	if not heap[self] then
+		self:Reset()
+		self:Hide()
+		self:ClearAllPoints()
+		self:SetParent(nil)
+		heap[self] = true
+	end
+end
+
+function addon:AcquireTexture(parent, layer, sublevel)
+	local texture = next(heap)
+	if texture then
+		heap[texture] = nil
+		texture:SetParent(parent)
+		texture:SetLayer(layer, sublevel)
+	else
+		texture = self:CreateTexture(parent, layer, nil, sublevel)
+		texture.Release = Texture_Release
+	end
+	texture:Show()
+	return texture
+end
+
 -- Here commes the default textures
+
 local function AddTexture(key, path, blendMode, sizeModifier, x0, x1, y0, y1)
 	local t = {
 		path = path,

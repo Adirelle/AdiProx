@@ -31,9 +31,7 @@ end
 function proto:OnCreate()
 	self:SetScript('OnShow', self.OnShow)
 	self:SetScript('OnHide', self.OnHide)	
-	self.Texture = addon:CreateTexture(self, nil, "ARTWORK")
-	self.Texture:SetPoint("CENTER")	
-	
+
 	local pulseGroup = self:CreateAnimationGroup()
 	local pulseAnim = pulseGroup:CreateAnimation("Scale") 
 	pulseGroup:SetLooping("BOUNCE")
@@ -56,6 +54,7 @@ function proto:Release()
 		self:Rotate(nil, nil)
 		self:ClearAllPoints()
 		self:SetParent(nil)
+		self.Texture:Release()
 	end
 end
 
@@ -76,6 +75,8 @@ function proto:Attach(attach)
 end
 
 function proto:OnAcquire(texture, size, r, g, b, a, blendMode)
+	self.Texture = self:AcquireTexture(self, nil, "ARTWORK")
+	self.Texture:SetPoint("CENTER")	
 	if texture then
 		self:SetTexture(texture, blendMode)
 	else
