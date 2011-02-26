@@ -7,14 +7,34 @@ All rights reserved.
 local addonName, addon = ...
 local L = addon.L
 
-local mod = addon:NewModule('Ping', 'AceEvent-3.0')
-
 local LibMapData = LibStub('LibMapData-1.0')
 
+local mod = addon:NewModule('Ping', 'AceEvent-3.0')
+
+mod.default_db = {
+	profile = {
+		showName = true,
+	}
+}
+
+local prefs
+
 function mod:PostEnable()
+	prefs = self.db.profile
 	self:RegisterEvent('MINIMAP_PING')
 	self:RegisterEvent('MINIMAP_UPDATE_ZOOM')
 	self:MINIMAP_UPDATE_ZOOM()
+end
+
+function mod:GetOptions()
+	return {
+		args = {
+			showName = {
+				name = L['Show pinger name'],
+				type = 'toggle',
+			}
+		}
+	}
 end
 
 function mod:MINIMAP_UPDATE_ZOOM()
@@ -81,6 +101,15 @@ function pingWidgetProto:CreateFrame(parent)
 	self.Name = name
 
 	return frame
+end
+
+function pingWidgetProto:OnConfigChanged(...)
+	parentProto.OnConfigChanged(self, ...)
+	if prefs.showName then
+		self.Name:Show()
+	else
+		self.Name:Hide()
+	end
 end
 
 function pingWidgetProto:OnAcquire(x, y, sender)

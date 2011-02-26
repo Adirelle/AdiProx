@@ -9,7 +9,19 @@ local L = addon.L
 
 local mod = addon:NewModule('Group', 'AceEvent-3.0')
 
+mod.default_db = {
+	profile = {
+		trackTarget = true,
+		trackSymbols = {
+			['*'] = false
+		},
+	}
+}
+
+local prefs
+
 function mod:PostEnable()
+	prefs = self.db.profile
 	self:RegisterMessage('AdiProx_GroupChanged', 'Update')
 	self:RegisterMessage('AdiProx_ClassColorsChanged', 'Update')
 	self:Update()
@@ -26,6 +38,35 @@ function mod:Update()
 			end
 		end
 	end
+end
+
+function mod.GetOptions()
+	return {
+		name = L['Party/raid'],
+		type = 'group',
+		args = {
+			trackTarget = {
+				name = L['Track target'],
+				type = 'toggle',
+				order = 10,
+			},
+			trackSymbols = {
+				name = L['Track symbols'],
+				type = 'multiselect',
+				values = {
+					RAID_TARGET_1,
+					RAID_TARGET_1,
+					RAID_TARGET_2,
+					RAID_TARGET_4,
+					RAID_TARGET_5,
+					RAID_TARGET_6,
+					RAID_TARGET_7,
+					RAID_TARGET_8,
+				},
+				order = 20,
+			},
+		},
+	}
 end
 
 --------------------------------------------------------------------------------
@@ -115,13 +156,18 @@ function partyWidgetProto:OnPositionChanged()
 end
 
 function partyWidgetProto:PLAYER_TARGET_CHANGED()
-	if self.unit and UnitIsUnit(self.unit, "target") then
+	if not self.unit then return end
+	if UnitIsUnit(self.unit, "target") then
 		self.TargetRing:Show()
-		self:SetImportant(true)
+		if prefs.trackTarget then
+			self:SetImportant(true)
+			return
+		end
 	else
 		self.TargetRing:Hide()
-		self:SetImportant(false)
 	end
+	local symbol = GetRaidTargetIndex(self.unit)
+	self:SetImportant(symbol and prefs.trackSymbols[symbol] or false)
 end
 
 function partyWidgetProto:OnUnitEvent(event, unit)

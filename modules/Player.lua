@@ -5,11 +5,40 @@ All rights reserved.
 --]]
 
 local addonName, addon = ...
+local L = addon.L
+
 local mod = addon:NewModule('Player')
 
+mod.default_db = {
+	profile = {
+		ticks = true,
+		range = true,
+	}
+}
+
+local prefs
+
 function mod:PostEnable()
+	prefs = self.db.profile
 	self:Debug('OnEnable')
 	addon:GetUnitPosition("player"):Attach("reticle", self:AcquireWidget("player_reticle"))
+end
+
+function mod:GetOptions()
+	return {
+		args = {
+			ticks = {
+				name = L['Range ticks'],
+				type = 'toggle',
+				order = 10,
+			},
+			range = {
+				name = L['Range text'],
+				type = 'toggle',
+				order = 20,
+			},
+		}
+	}
 end
 
 --------------------------------------------------------------------------------
@@ -36,7 +65,7 @@ function proto:CreateFrame(parent)
 	self.Ticks = {}
 	for i, v in ipairs{{1,0}, {0,1}, {-1, 0}, {0, -1}} do
 		local dx, dy = unpack(v)
-		for dist = 20, addon.MAX_ZOOM, 20 do
+		for dist = 20, 200, 20 do
 			local tick = frame:CreateTexture(nil, "BACKGROUND")
 			local size, light = 5, 0.7
 			if dist == 40 then
@@ -57,8 +86,27 @@ function proto:CreateFrame(parent)
 	return frame
 end
 
+function proto:OnConfigChanged(...)
+	parentProto.OnConfigChanged(self, ...)
+	if prefs.ticks then
+		for tick in pairs(self.Ticks) do
+			tick:Show()
+		end
+	else
+		for tick in pairs(self.Ticks) do
+			tick:Hide()
+		end
+	end
+	if prefs.range then
+		self.Text:Show()
+	else
+		self.Text:Hide()
+	end
+	addon.forceUpdate = true
+end
+
 function proto:SetPoint(x, y, pixelsPerYard, distance, zoomRange)	
-	if pixelsPerYard ~= self.pixelsPerYard then
+	if prefs.ticks and pixelsPerYard ~= self.pixelsPerYard then
 		self.pixelsPerYard = pixelsPerYard
 		for tick in pairs(self.Ticks) do
 			if tick.dist <= zoomRange then
@@ -69,7 +117,7 @@ function proto:SetPoint(x, y, pixelsPerYard, distance, zoomRange)
 			end
 		end
 	end
-	if zoomRange ~= self._zoomRange then
+	if prefs.range and zoomRange ~= self._zoomRange then
 		self._zoomRange = zoomRange
 		self.Text:SetFormattedText("%dm", ceil(zoomRange))
 	end
