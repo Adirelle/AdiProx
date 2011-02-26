@@ -38,6 +38,10 @@ local DEFAULT_SETTINGS = {
 		backgroundOpacity = 0.8,
 		scale = 1.0,
 		autoHide = true,
+		autoZoom = true,
+		minZoomRange = 25,
+		maxZoomRange = 100,
+		zoomRange = 50,
 	}
 }
 
@@ -48,10 +52,6 @@ local DEFAULT_SETTINGS = {
 local prefs
 
 local UPDATE_PERIOD = 1/30
-
-local ZOOM_GRANULARITY = 25
-local MAX_ZOOM = ZOOM_GRANULARITY * 4
-addon.MAX_ZOOM = MAX_ZOOM
 
 local LibMapData = LibStub('LibMapData-1.0')
 
@@ -193,7 +193,7 @@ end
 local log, pow = math.log, math.pow
 local log2 = log(2)
 local delay = 0
-local actualZoom, nextZoom, targetZoom, zoomDelay, zoomSpeed = ZOOM_GRANULARITY, ZOOM_GRANULARITY, ZOOM_GRANULARITY, 0, 0
+local actualZoom, nextZoom, targetZoom, zoomDelay, zoomSpeed = 25, 25, 25, 0, 0
 
 function addon:OnUpdate(elapsed)
 	delay = delay + elapsed
@@ -219,7 +219,7 @@ function addon:OnUpdate(elapsed)
 
 	local showMe = not prefs.autoHide or IsShiftKeyDown()
 	local rotangle = 2 * math.pi - GetPlayerFacing()
-	local maxRange = ZOOM_GRANULARITY
+	local maxRange = prefs.minZoomRange
 
 	playerPos:ResetAlerts()
 	
@@ -244,27 +244,31 @@ function addon:OnUpdate(elapsed)
 		return self.frame:Hide()
 	end
 	
-	local idealZoom = ZOOM_GRANULARITY * pow(2, ceil(log(min(maxRange, MAX_ZOOM) / ZOOM_GRANULARITY) / log2))
-	if not self.frame:IsShown() then
-		-- Directly use the ideal zoom on show
-		actualZoom, nextZoom, targetZoom = idealZoom, idealZoom, idealZoom
-	else
-		-- Wait a small period (0.5s) before actually change the zoom
-		if nextZoom ~= idealZoom then
-			nextZoom, zoomDelay = idealZoom, 0.2
-		elseif targetZoom ~= nextZoom then
-			zoomDelay = zoomDelay - elapsed
-			if zoomDelay <= 0 then
-				targetZoom, zoomSpeed = nextZoom, max(nextZoom, targetZoom) / 0.5
+	if prefs.autoZoom then
+		local idealZoom = min(prefs.minZoomRange * pow(2, ceil(log(maxRange / prefs.minZoomRange) / log2)), prefs.maxZoomRange)
+		if not self.frame:IsShown() then
+			-- Directly use the ideal zoom on show
+			actualZoom, nextZoom, targetZoom = idealZoom, idealZoom, idealZoom
+		else
+			-- Wait a small period (0.5s) before actually change the zoom
+			if nextZoom ~= idealZoom then
+				nextZoom, zoomDelay = idealZoom, 0.2
+			elseif targetZoom ~= nextZoom then
+				zoomDelay = zoomDelay - elapsed
+				if zoomDelay <= 0 then
+					targetZoom, zoomSpeed = nextZoom, max(nextZoom, targetZoom) / 0.5
+				end
+			end
+		
+			-- Have actualZoom reach targetZoom
+			if actualZoom < targetZoom then
+				actualZoom = min(actualZoom + elapsed * zoomSpeed, targetZoom)
+			elseif actualZoom > targetZoom then
+				actualZoom = max(actualZoom - elapsed * zoomSpeed, targetZoom)
 			end
 		end
-		
-		-- Have actualZoom reach targetZoom
-		if actualZoom < targetZoom then
-			actualZoom = min(actualZoom + elapsed * zoomSpeed, targetZoom)
-		elseif actualZoom > targetZoom then
-			actualZoom = max(actualZoom - elapsed * zoomSpeed, targetZoom)
-		end
+	else
+		actualZoom = prefs.zoomRange
 	end
 	
 	local pixelsPerYard = (self.container:GetWidth() - 16) / (actualZoom * 2)

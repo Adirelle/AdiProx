@@ -123,6 +123,45 @@ function addon.GetOptions()
 						type = 'toggle',
 						order = 60,
 					},
+					zoom = {
+						name = L['Zoom'],
+						type = 'group',
+						inline = true,
+						args = {
+							autoZoom = {
+								name = L['Automatic'],
+								type = 'toggle',
+								order = 10,
+							},
+							minZoomRange = {
+								name = L['Minimal range'],
+								type = 'range',
+								min = 10,
+								max = 100,
+								step = 5,
+								order = 20,
+								hidden = function() return not addon.db.profile.autoZoom end,
+							},
+							maxZoomRange = {
+								name = L['Maximal range'],
+								type = 'range',
+								min = 40,
+								max = 200,
+								step = 5,
+								order = 30,
+								hidden = function() return not addon.db.profile.autoZoom end,
+							},
+							zoomRange = {
+								name = L['Fixed range'],
+								type = 'range',
+								min = 10,
+								max = 200,
+								step = 5,
+								order = 40,
+								hidden = function() return addon.db.profile.autoZoom end,
+							},
+						}
+					}
 				}
 			},
 			profiles = profileOpts,
