@@ -75,7 +75,7 @@ function proto:Attach(attach)
 end
 
 function proto:OnAcquire(texture, size, r, g, b, a, blendMode)
-	self.Texture = self:AcquireTexture(self, nil, "ARTWORK")
+	self.Texture = addon:AcquireTexture(self, "ARTWORK")
 	self.Texture:SetPoint("CENTER")	
 	if texture then
 		self:SetTexture(texture, blendMode)

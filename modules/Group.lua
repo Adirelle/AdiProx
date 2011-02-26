@@ -60,28 +60,27 @@ end
 
 function partyWidgetProto:Update()
 	local unit = self.unit
-	if not unit then return end
 	local r, g, b = addon.ParseColor(select(2, UnitClass(unit)))
 
 	local name = self.Name
 	name:SetText(UnitName(unit))
-	name:SetTextColor(r, g, b, 0.75)
+	name:SetTextColor(r, g, b)
 
 	local symbol = GetRaidTargetIndex(unit)
 	local icon = self.Icon
-	if symbol and symbol > 0 then
+	if symbol then
 		icon:SetTexture([[Interface\TargetingFrame\UI-RaidTargetingIcon_]]..symbol)
 		icon:SetTexCoord(0, 1, 0, 1)
-		icon:SetVertexColor(1, 1, 1, 1)
-		icon:SetSize(8, 8)
+		icon:SetVertexColor(1, 1, 1)
+		icon:SetSize(12, 12)
 	else
 		icon:SetTexture([[Interface\Minimap\PartyRaidBlips]])
 		icon:SetTexCoord(0.875, 1, 0.25, 0.5)
-		icon:SetVertexColor(r, g, b, 1)
+		icon:SetVertexColor(r, g, b)
 		icon:SetSize(16, 16)
 	end
 	
-	self:PLAYER_TARGET_CHANGED()
+	return self:PLAYER_TARGET_CHANGED()
 end
 
 function partyWidgetProto:SetPoint(...)
@@ -109,7 +108,9 @@ function partyWidgetProto:OnPositionChanged()
 			AceEvent.UnregisterEvent(self, 'PLAYER_TARGET_CHANGED')
 		end
 		self.unit = unit
-		self:Update()
+		if unit then		
+			self:Update()
+		end
 	end
 end
 

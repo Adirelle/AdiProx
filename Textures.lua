@@ -34,7 +34,7 @@ function addon:CreateTexture(parent, name, layer, inherits, sublevel)
 end
 
 function texProto:Reset()
-	t.sizeModifier, t.texCoord = DEFAULT_TEXTURE.sizeModifier, DEFAULT_TEXTURE.texCoord
+	self.sizeModifier, self.texCoord = DEFAULT_TEXTURE.sizeModifier, DEFAULT_TEXTURE.texCoord
 end
 
 function texProto:SetTexture(texture, ...)
@@ -67,13 +67,15 @@ end
 -- Texture recycling
 
 local heap = {}
+local heapParent = CreateFrame("Frame")
+heapParent:Hide()
 
 local function Texture_Release(self)
 	if not heap[self] then
 		self:Reset()
 		self:Hide()
 		self:ClearAllPoints()
-		self:SetParent(nil)
+		self:SetParent(heapParent)
 		heap[self] = true
 	end
 end
@@ -83,9 +85,9 @@ function addon:AcquireTexture(parent, layer, sublevel)
 	if texture then
 		heap[texture] = nil
 		texture:SetParent(parent)
-		texture:SetLayer(layer, sublevel)
+		texture:SetDrawLayer(layer, sublevel)
 	else
-		texture = self:CreateTexture(parent, layer, nil, sublevel)
+		texture = self:CreateTexture(parent, nil, layer, nil, sublevel)
 		texture.Release = Texture_Release
 	end
 	texture:Show()

@@ -77,24 +77,21 @@ function widgetProto:OnCreate()
 	self.animations = {}
 end
 
-function widgetProto:Release()
-	if activeWidgets[self] then
-		activeWidgets[self] = nil
-		for animation in pairs(self.animations) do
-			animation:Release()
-		end
-		self:OnRelease()
-		self.heap[self] = true
-	end
-end
-
 function widgetProto:CreateFrame(parent)
 	local frame = CreateFrame("Frame", nil, parent)
 	frame:SetSize(0.1, 0.1)
 	return frame
 end
 
-function widgetProto:OnAcquire()
+function widgetProto:Release()
+	if activeWidgets[self] then
+		activeWidgets[self] = nil
+		for _, animation in pairs(self.animations) do
+			animation:Release()
+		end
+		self:OnRelease()
+		self.heap[self] = true
+	end
 end
 
 function widgetProto:OnRelease()
@@ -185,9 +182,6 @@ end
 function widgetProto:OnAlertChanged()
 end
 
-function widgetProto:OnPositionChanged()	
-end
-
 function widgetProto:SetPosition(position)
 	if position ~= self.position then
 		local oldPosition = self.position
@@ -204,6 +198,9 @@ function widgetProto:SetPosition(position)
 		end
 	end
 	return self
+end
+
+function widgetProto:OnPositionChanged()	
 end
 
 function widgetProto:OnUpdate(now)

@@ -211,7 +211,7 @@ function moduleProto:PlaceMarker(key, target, static, markerType, color, radius,
 	end
 	if not widget then
 		self:Debug('PlaceMarker: creating a new marker')
-		widget = self:AcquireWidget(markerType or (radius and "proximity") or "reticle", radius, duration, color)
+		widget = self:AcquireWidget(markerType or (radius and "encounter_proximity") or "encounter_reticle", radius, duration, color)
 		widget:SetImportant(true)
 		position:Attach(key, widget)
 	else
@@ -360,8 +360,8 @@ end
 -- Reticle widget
 --------------------------------------------------------------------------------
 
-local reticleProto, parentProto = addon.NewWidgetType("encounter_target", "encounter")
-self.defaultRadius = 24
+local reticleProto, parentProto = addon.NewWidgetType("encounter_reticle", "encounter")
+reticleProto.defaultRadius = 24
 
 function reticleProto:OnAcquire(radius, duration, color)
 	parentProto.OnAcquire(self, "targeting", radius, duration, color)
