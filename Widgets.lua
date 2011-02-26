@@ -188,21 +188,6 @@ end
 function widgetProto:OnPositionChanged()	
 end
 
-function widgetProto:AcquireAnimation(...)
-	local animation = addon:AcquireAnimation(self.frame, ...)
-	self.animations[animation] = true
-	animation:SetFrameLevel(self.frameLevel)
-	animation:Attach(self)
-	return animation
-end
-
-function widgetProto:ReleaseAnimation(animation)
-	if self.animations[animation] then
-		self.animations[animation] = nil
-		animation:Attach(nil)
-	end
-end
-
 function widgetProto:SetPosition(position)
 	if position ~= self.position then
 		local oldPosition = self.position
@@ -232,6 +217,41 @@ function widgetProto:SetPoint(x, y, pixelsPerYard, distance, zoomRange, onEdge)
 		self.x, self.y = x, y
 		self.frame:SetPoint("CENTER", x, y)
 	end
+end
+
+function widgetProto:AcquireAnimation(name, ...)
+	if self.animations[name] then
+		self.animations[name]:Release()
+	end
+	local animation = addon:AcquireAnimation(self.frame, ...)
+	self.animations[name] = animation
+	animation:SetFrameLevel(self.frameLevel)
+	animation:Attach(self)
+	return animation
+end
+
+function widgetProto:ReleaseAnimation(key)
+	local animation
+	if type(key) == "string" then
+		animation = self.animations[key]
+		self.animations[key] = nil
+	else
+		for name, anim in pairs(self.animations) do
+			if anim == key then
+				animation = anim
+				self.animations[name] = nil
+				break
+			end
+		end
+	end
+	if animation then
+		animation:Release()
+	end
+	return animation
+end
+
+function widgetProto:GetAnimation(name)
+	return self.animations[name]
 end
 
 --------------------------------------------------------------------------------

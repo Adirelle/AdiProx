@@ -323,16 +323,17 @@ function encounterProto:OnAcquire(texture, radius, duration, color)
 	self.duration, self.radius = nil, nil
 	parentProto.OnAcquire(self)
 	self.color = color
-	self.mainAnimation = self:AcquireAnimation(texture, radius, color)
+	self:AcquireAnimation("main", texture, radius, color)
 	self:Refresh(radius, duration)
 end
 
 function encounterProto:Refresh(radius, duration)
-	self:SetRadius(radius)
 	self:SetDuration(duration)
+	self:SetRadius(radius)
 end
 
 function encounterProto:SetRadius(radius)
+	radius = radius or self.defaultRadius
 	if self.radius ~= radius then
 		self.radius = radius
 		self:OnRadiusChanged(radius)		
@@ -350,7 +351,7 @@ end
 
 function encounterProto:OnAlertChanged()
 	local color = self.alert and "RED" or self.color
-	for anim in pairs(self.animations) do
+	for _, anim in pairs(self.animations) do
 		anim:SetColor(color)
 	end
 end
@@ -359,20 +360,16 @@ end
 -- Reticle widget
 --------------------------------------------------------------------------------
 
-local reticleProto, parentProto = addon.NewWidgetType("reticle", "encounter")
+local reticleProto, parentProto = addon.NewWidgetType("encounter_target", "encounter")
+self.defaultRadius = 24
 
 function reticleProto:OnAcquire(radius, duration, color)
-	self.durationAnimation = nil
 	parentProto.OnAcquire(self, "targeting", radius, duration, color)
-	self.mainAnimation:Rotate(360, 2)
-end
-
-function reticleProto:SetRadius(radius)
-	return parentProto.SetRadius(self, radius or 24)
+	self:GetAnimation("main"):Rotate(360, 2)
 end
 
 function reticleProto:OnRadiusChanged(radius)
-	for anim in pairs(self.animations) do
+	for _, anim in pairs(self.animations) do
 		anim:SetSize(radius)
 	end
 end
@@ -380,12 +377,10 @@ end
 function reticleProto:OnDurationChanged(duration)
 	self:Debug("OnDurationChanged", duration)
 	if duration then
-		if not self.durationAnimation then
-			self.durationAnimation = self:AcquireAnimation("fuzzyring", self.radius, self.color)
-		end
-		self.durationAnimation:Pulse(-0.5, duration)
-	elseif self.durationAnimation then
-		self.durationAnimation = self:ReleaseAnimation(self.durationAnimation)
+		local anim = self:GetAnimation("duration") or self:AcquireAnimation("duration", "fuzzyring", self.radius, self.color)
+		anim:Pulse(-0.5, duration)
+	else
+		self:ReleaseAnimation("duration")
 	end
 end
 
@@ -393,7 +388,7 @@ end
 -- Proximity widget
 --------------------------------------------------------------------------------
 
-local rangeProto, parentProto = addon.NewWidgetType("proximity", "encounter")
+local rangeProto, parentProto = addon.NewWidgetType("encounter_proximity", "encounter")
 
 function rangeProto:OnAcquire(radius, duration, color)
 	self.pixelsPerYard = nil
@@ -405,13 +400,11 @@ function rangeProto:OnRadiusChanged(radius)
 end
 
 function rangeProto:OnDurationChanged(duration)
-	local anim = self.mainAnimation
+	local anim = self:GetAnimation("main")
 	if duration then
-		anim:SetTexture("timer")
-		anim:Rotate(-360, duration)
+		anim:SetTexture("timer"):Rotate(-360, duration)
 	else
-		anim:SetTexture("highlight")
-		anim:Rotate()
+		anim:SetTexture("highlight"):Rotate(nil, nil)
 	end
 end
 
@@ -420,7 +413,7 @@ function rangeProto:SetPoint(x, y, pixelsPerYard, ...)
 	if pixelsPerYard ~= self.pixelsPerYard then
 		self.pixelsPerYard = pixelsPerYard
 		local size = 2 * self.radius * pixelsPerYard
-		for anim in pairs(self.animations) do
+		for _, anim in pairs(self.animations) do
 			anim:SetSize(size)
 		end
 	end

@@ -94,8 +94,8 @@ function pingWidgetProto:OnAcquire(x, y, sender)
 	self:SetImportant(true):SetDuration(5)
 	addon:GetStaticPosition(x, y):Attach("ping", self)
 	
-	self:AcquireAnimation("targeting", 16):Rotate(-360, 2)
-	self:AcquireAnimation([[Interface\Minimap\Ping\ping2]], 12, 1, 1, 1, 1, "ADD"):Pulse(1.5, 1)
+	self:AcquireAnimation("reticle", "targeting", 16):Rotate(-360, 2)
+	self:AcquireAnimation("circle", [[Interface\Minimap\Ping\ping2]], 12, 1, 1, 1, 1, "ADD"):Pulse(1.5, 1)
 end
 
 function pingWidgetProto:OnRelease()
