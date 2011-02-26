@@ -46,7 +46,7 @@ function partyWidgetProto:CreateFrame(parent)
 	self.Icon = icon
 	
 	local targetRing = addon:CreateTexture(frame, nil, "OVERLAY")
-	targetRing:SetTexture("ring")
+	targetRing:SetTexture("smallcircle")
 	targetRing:SetPoint("CENTER")
 	targetRing:SetSize(16, 16)
 	self.TargetRing = targetRing

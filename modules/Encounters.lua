@@ -377,7 +377,7 @@ end
 function reticleProto:OnDurationChanged(duration)
 	self:Debug("OnDurationChanged", duration)
 	if duration then
-		local anim = self:GetAnimation("duration") or self:AcquireAnimation("duration", "fuzzyring", self.radius, self.color)
+		local anim = self:GetAnimation("duration") or self:AcquireAnimation("duration", "smallcircle", self.radius, self.color)
 		anim:Pulse(-0.5, duration)
 	else
 		self:ReleaseAnimation("duration")
