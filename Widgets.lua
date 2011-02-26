@@ -7,6 +7,8 @@ All rights reserved.
 local addonName, addon = ...
 local L = addon.L
 
+local AceEvent = LibStub('AceEvent-3.0')
+
 --------------------------------------------------------------------------------
 -- Map widgets
 --------------------------------------------------------------------------------
@@ -26,6 +28,7 @@ function addon.AcquireWidget(owner, typeName, ...)
 		widget:OnCreate()
 	end
 	activeWidgets[widget] = owner
+	widget.owner = owner
 	widget:OnAcquire(...)
 	return widget
 end
@@ -83,6 +86,14 @@ function widgetProto:CreateFrame(parent)
 	return frame
 end
 
+function widgetProto:OnAcquire()
+	AceEvent.RegisterMessage(self, 'AdiProx_ConfigChanged_'..self.owner.name, 'OnConfigChanged')
+	self:OnConfigChanged()
+end
+
+function widgetProto:OnConfigChanged()
+end
+
 function widgetProto:Release()
 	if activeWidgets[self] then
 		activeWidgets[self] = nil
@@ -90,6 +101,8 @@ function widgetProto:Release()
 			animation:Release()
 		end
 		self:OnRelease()
+		AceEvent.UnregisterAllEvents(self)
+		AceEvent.UnregisterAllMessages(self)
 		self.heap[self] = true
 	end
 end
