@@ -110,9 +110,11 @@ local function AddTexture(key, path, blendMode, sizeModifier, x0, x1, y0, y1)
 	TEXTURES[key] = t
 end
 
-AddTexture("smallcircle", [[Interface\Minimap\Ping\ping2]], "ADD", 128/110)
+AddTexture("targetcircle", [[Interface\Minimap\Ping\ping2]], "ADD", 128/110)
+AddTexture("smallcircle", [[Interface\AddOns\AdiProx\media\small_circle]], "BLEND", 32/30)
 AddTexture("glow", [[Interface\GLUES\MODELS\UI_Tauren\gradientCircle]], "ADD")
 AddTexture("party", [[Interface\MINIMAP\PartyRaidBlips]])
+AddTexture("targeting", [[Interface\Minimap\Ping\ping5]], "ADD", 128/112)
 AddTexture("reticle", [[SPELLS\Reticle_128]], "ADD", 1, 0.05, 0.95, 0.05, 0.95)
 AddTexture("ring", [[SPELLS\CIRCLE]], "ADD")
 AddTexture("fuzzyring", [[SPELLS\WHITERINGTHIN128]], "ADD")
@@ -123,8 +125,7 @@ AddTexture("rune3", [[SPELLS\AURARUNE_A]], "ADD", 0.77)
 AddTexture("rune4", [[SPELLS\AURARUNE_B]], "ADD", 1, 0.032, 0.959, 0.035, 0.959)
 
 -- Textures borrowed from Antiarc's HudMap
-AddTexture("targeting", [[Interface\Minimap\Ping\ping5]], "ADD", 128/112)
-AddTexture("highlight", [[Interface\AddOns\AdiProx\media\alert_circle]], "ADD")
+AddTexture("highlight", [[Interface\AddOns\AdiProx\media\alert_circle]])
 AddTexture("radius", [[Interface\AddOns\AdiProx\media\radius]])
 AddTexture("radius_lg", [[Interface\AddOns\AdiProx\media\radius_lg]])
 AddTexture("timer", [[Interface\AddOns\AdiProx\media\timer]])
