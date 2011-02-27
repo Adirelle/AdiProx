@@ -104,6 +104,8 @@ end
 
 moduleProto.core = mod
 
+moduleProto.default_db = { profile = { } }
+
 mod:SetDefaultModulePrototype(moduleProto)
 mod:SetDefaultModuleState(false)
 mod:SetDefaultModuleLibraries('LibCombatLogEvent-1.0', 'AceEvent-3.0', 'AceTimer-3.0')
@@ -140,7 +142,6 @@ local function MergeSet(self, key, ...)
 	return self
 end
 
-local DEFAULT_DEF = {}
 local function MergeDict(self, key, ...)
 	local t = self[key]
 	if not t then
@@ -152,8 +153,12 @@ local function MergeDict(self, key, ...)
 	if type(data) == "table" then
 		n = n - 1
 	else
-		data = DEFAULT_DEF
+		data = {}
 	end
+	local spellId = ...
+	data.spellId = spellId
+	data.key = key..spellId
+	self.default_db.profile[data.key] = true
 	for i = 1, n do
 		t[select(i, ...)] = data
 	end
@@ -225,11 +230,25 @@ function moduleProto:PlaceMarker(key, target, static, markerType, color, radius,
 	return widget, position
 end
 
+function moduleProto:GetAura(spellId)
+	local aura = self.auras[spellId]
+	if aura and self.db.profile[aura.key] then
+		return aura
+	end
+end
+
+function moduleProto:GetSpellCast(spellId)
+	local spell = self.spellCasts[spellId]
+	if spell and self.db.profile[spell.key] then
+		return spell
+	end
+end
+
 function moduleProto:SPELL_AURA_APPLIED(event, args)
-	local aura = self.auras[args.spellId]
+	local aura = self:GetAura(args.spellId)
 	if aura then
 		local color = aura.color or GetDebuffColor(args.spellId) or GetSchoolColor(args.spellSchool)
-		local widget, position = self:PlaceMarker("aura"..args.spellId, args.destGUID, aura.static, aura.marker, color, aura.range, aura.duration)
+		local widget, position = self:PlaceMarker(aura.key, args.destGUID, aura.static, aura.marker, color, aura.range, aura.duration)
 		if widget and self.PostAuraApplied then
 			self:PostAuraApplied(event, args, position, widget)
 		end
@@ -237,10 +256,11 @@ function moduleProto:SPELL_AURA_APPLIED(event, args)
 end
 
 function moduleProto:SPELL_AURA_REMOVED(event, args)
-	if self.auras[args.spellId] then
+	local aura = self:GetAura(args.spellId)
+	if aura then
 		local position = addon:GetUnitPosition(args.destGUID)
 		if position then
-			local widget = position:Detach("aura"..args.spellId)
+			local widget = position:Detach(aura.key)
 			if widget and self.PostAuraRemoved then
 				self:PostAuraRemoved(event, args, position, widget)
 			end
@@ -249,7 +269,7 @@ function moduleProto:SPELL_AURA_REMOVED(event, args)
 end
 
 function moduleProto:SPELL_CAST_START(event, args)
-	local spell = self.spellCasts[args.spellId]
+	local spell = self:GetSpellCast(args.spellId)
 	if spell then
 		wipe(self.currentCast)
 		for k, v in pairs(args) do
@@ -260,7 +280,7 @@ function moduleProto:SPELL_CAST_START(event, args)
 end
 
 function moduleProto:SPELL_CAST_SUCCESS(event, args)
-	if self.spellCasts[args.spellId] then
+	if self:GetSpellCast(args.spellId) then
 		return self:OnSpellCast(event, args, 1)
 	end
 end
@@ -273,7 +293,7 @@ function moduleProto:GetSpellCastTarget(args)
 	local duration = (select(6, UnitCastingInfo(unit)) or 0) / 1000 - GetTime()
 	args.destName = UnitName(target)
 	args.destGUID = UnitGUID(target)
-	if self.spellCasts[args.spellId].atEnd then
+	if self:GetSpellCast(args.spellId).atEnd then
 		self:ScheduleTimer("OnSpellCastEnd", duration, args)
 	else
 		self:OnSpellCast(args.event, args, duration)
@@ -285,10 +305,10 @@ function moduleProto:OnSpellCastEnd(args)
 end
 
 function moduleProto:OnSpellCast(event, args, duration)
-	local spell = self.spellCasts[args.spellId]
+	local spell = self:GetSpellCast(args.spellId)
 	if spell then
 		local color = spell.color or GetSchoolColor(args.spellSchool) or GetDebuffColor(args.spellID)
-		local widget, position = self:PlaceMarker("spell"..args.spellId, args.destGUID, spell.static, spell.marker, color, spell.range, spell.duration or duration)
+		local widget, position = self:PlaceMarker(spell.key, args.destGUID, spell.static, spell.marker, color, spell.range, spell.duration or duration)
 		if widget and self.PostSpellCast then
 			self:PostSpellCast(event, args, position, widget)
 		end
@@ -312,6 +332,33 @@ function moduleProto:MobGUIDToUnit(guid)
 		for i = 1, GetNumPartyMembers() do
 			if UnitGUID("partytarget"..i) == guid then return "partytarget"..i end
 		end
+	end
+end
+
+function moduleProto:GetOptions()
+	local spells = {}
+	if self.auras then
+		for _, aura in pairs(self.auras) do
+			if not spells[aura.key] then
+				spells[aura.key] = {
+					name = GetSpellInfo(aura.spellId) or ('#'..aura.spellId),
+					type = 'toggle'
+				}
+			end
+		end
+	end
+	if self.spellCasts then
+		for _, spell in pairs(self.spellCasts) do
+			if not spells[spell.key] then
+				spells[spell.key] = {
+					name = GetSpellInfo(spell.spellId) or ('#'..spell.spellId),
+					type = 'toggle'
+				}
+			end
+		end
+	end
+	if next(spells) then
+		return { args = spells }
 	end
 end
 
