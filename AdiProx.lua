@@ -75,8 +75,6 @@ function addon:OnInitialize()
 	self:RegisterChatCommand("acm", "ChatCommand", true)
 	self:RegisterChatCommand(addonName, "ChatCommand", true)
 	
-	self.RegisterMessage(addonName, 'AdiProx_ConfigChanged_AdiProx', self.OnConfigChanged)
-	
 	self:SetEnabledState(self:ShouldEnable())
 end
 
@@ -94,9 +92,8 @@ function addon:OnEnable()
 	end
 	self.updateFrame:Show()
 
+	self:RegisterMessage('AdiProx_ConfigChanged_AdiProx', 'OnConfigChanged')
 	self:OnConfigChanged()
-
-	self.zoomRange = ZOOM_GRANULARITY
 
 	LibMapData.RegisterCallback(self, "MapChanged")
 	self:MapChanged("OnEnable", GetMapInfo(), GetCurrentMapDungeonLevel())
@@ -148,13 +145,13 @@ function addon:UpdateEnabledState(...)
 	end
 end
 
-function addon.OnConfigChanged()
-	local frame = addon.frame
+function addon:OnConfigChanged()
+	local frame = self.frame
 	frame:SetAlpha(prefs.opacity)
 	frame:SetBackdropColor(0, 0, 0, prefs.backgroundOpacity)
 	frame:SetBackdropBorderColor(1, 1, 1, prefs.backgroundOpacity)	
 	frame:SetScale(prefs.scale)
-	addon.forceUpdate = true
+	self.forceUpdate = true
 end
 
 function addon:ChatCommand()
