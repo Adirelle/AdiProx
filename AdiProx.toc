@@ -6,7 +6,7 @@
 ## Version: @project-version@
 ## SavedVariables: AdiProxDB
 ## X-Date: @project-date-iso@
-## OptionalDeps: LibStub, CallbackHandler-1.0, Ace3, LibMapData-1.0, LibMovable-1.0, LibDualSpec-1.0, AdiDebug
+## OptionalDeps: LibStub, CallbackHandler-1.0, Ace3, LibMapData-1.0, LibBabble-Zone-3.0, LibBabble-Boss-3.0, LibDualSpec-1.0, AdiDebug
 
 #@no-lib-strip@
 libs\LibStub\LibStub.lua
