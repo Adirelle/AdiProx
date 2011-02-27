@@ -41,7 +41,6 @@ function texProto:SetTexture(texture, ...)
 	if type(texture) == "string" then
 		local path, blendMode
 		path, blendMode, self.sizeModifier, self.texCoord = ParseTexture(texture, ...)
-		addon:Debug('SetTexture', texture, '=>', path, blendMode, self.sizeModifier, self.texCoord)
 		self:SetBlendMode(blendMode)
 		self:SetTexCoord(unpack(self.texCoord))
 		return texParentProto.SetTexture(self, path)

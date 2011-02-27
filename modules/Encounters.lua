@@ -17,8 +17,11 @@ local UnitGUID, UnitExists, UnitIsDeadOrGhost, UnitAffectingCombat = UnitGUID, U
 local band = bit.band
 
 local function GetMobID(guid)
-	if guid and band(tonumber(strsub(guid, 5, 5), 16), 7) == 3 then
-		return tonumber(strsub(guid, 7, 10), 16)
+	if guid then
+		local guidType = band(tonumber(strsub(guid, 5, 5), 16), 7)
+		if guidType == 3 or guidType == 5 then
+			return tonumber(strsub(guid, 7, 10), 16)
+		end
 	end
 end
 
@@ -90,8 +93,8 @@ function mod:PostEnable()
 end
 
 function mod:OnMapChanged(event)
-	if addon.currentMap == currentMap then return end
 	self:Debug('OnMapChanged:', addon.currentMap)
+	if addon.currentMap == currentMap then return end
 	currentMap = addon.currentMap
 	watchedMobs = self.maps[currentMap]
 	if watchedMobs and not next(watchedMobs) then
@@ -117,10 +120,10 @@ end
 
 local function CheckUnit(unit)
 	if UnitExists(unit) and not UnitIsDeadOrGhost(unit) then
-		local mobID = GetMobID(UnitGUID(unit))
-		mod:Debug('CheckUnit(', unit, ')', UnitName(unit), UnitGUID(unit), mobID)
+		local guid = UnitGUID(unit)
+		local mobID = GetMobID(guid)
 		if mobID and watchedMobs[mobID] and not engagedMobs[mobID] then
-			mod:Debug('Found mob', mobID, ':', unit)
+			mod:Debug('Found mob', mobID, ':', unit, UnitName(unit))
 			engagedMobs[mobID] = true
 			return true
 		end
@@ -176,6 +179,7 @@ function mod:CheckPull(event)
 end
 
 function mod:CheckEndOfCombat(event)
+	self:Debug('CheckEndOfCombat', event)
 	if self.eocTimer then
 		self.eocTimer = self:CancelTimer(self.eocTimer, true)
 	end
@@ -199,21 +203,23 @@ function mod:CheckEndOfCombat(event)
 	end
 	if not next(engagedMobs) then
 		self:UpdateEvents()
-		mod:Debug('Combat ended')
+		self:Debug('Combat ended')
 		self:SendMessage('AdiProx_EncounterChanged')
 	end
 end
 
 function mod:UnitDied(event, args)
 	local mobID = GetMobID(args.srcGUID)
-	if mobID then
+	if mobID and engagedMobs[modID] then
+		self:Debug('UnitDied', args.srcName, '(src)')
 		engagedMobs[modID] = nil
 	end
 	mobID = GetMobID(args.destGUID)
-	if mobID then
+	if mobID and engagedMobs[modID] then
+		self:Debug('UnitDied', args.destName, '(dest)')
 		engagedMobs[modID] = nil
 	end
-	return self:CheckWipe(event)
+	return self:CheckEndOfCombat(event)
 end
 
 function mod:GetOptions()
