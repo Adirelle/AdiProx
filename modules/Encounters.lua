@@ -148,12 +148,15 @@ function mod:CheckPull(event)
 	self:Debug('CheckPull', event)
 	local changed = (event == 'AdiProx_OnMapChanged')
 	if watchedMobs then
+		local inCombat = false
 		for i = 1, 4 do
 			if CheckUnit("boss"..i) then
+				inCombat = true
 				changed = true
 			end		
 		end
 		if IsFighting("player") then
+			inCombat = true
 			if CheckUnit("target") then
 				changed = true
 			end
@@ -165,11 +168,15 @@ function mod:CheckPull(event)
 		if prefix and num then
 			for i = 1, num do
 				if IsFighting(prefix..num) then
+					inCombat = true
 					if CheckUnit(format("%starget%d", prefix, num)) then
 						changed = true
 					end
 				end
 			end		
+		end
+		if not inCombat and not self.eocTimer then
+			self.eocTimer = self:ScheduleRepeatingTimer("CheckEndOfCombat", 3, "Timer")
 		end
 	end
 	if changed then
