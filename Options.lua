@@ -18,6 +18,8 @@ function handlerProto:Get(info, subKey)
 	local db, key = self:GetDatabase(info)
 	if info.type == 'multiselect' then
 		return db[key][subKey]
+	elseif info.type == 'color' then
+		return unpack(db[key], 1, info.hasAlpha and 4 or 3)
 	else
 		return db[key]
 	end
@@ -28,6 +30,14 @@ function handlerProto:Set(info, ...)
 	if info.type == 'multiselect' then
 		local subKey, value = ...
 		db[key][subKey] = value
+	elseif info.type == 'color' then
+		local r, g, b, a = ...
+		local c = db[key]
+		if not c then
+			db[key] = { r, g, b, info.hasAlpha and a or nil }
+		else
+			c[1], c[2], c[3], c[4] = r, g, b, info.hasAlpha and a or nil
+		end
 	else
 		db[key] = ...
 	end
