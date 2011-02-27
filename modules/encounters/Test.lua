@@ -8,6 +8,7 @@ local addonName, addon = ...
 
 addon:NewEncounterModule('Test')
 	:InMaps("Orgrimmar")
+	:AgainstMobs(31146, 32666, 46647) -- Various target dummies
 	-- Restokin-based tests
 	:WatchAuras(33763) -- Lifebloom
 	:WatchSpellCasts(18562, { range = 9, static = true, duration = 7.5 }) -- Swiftmend

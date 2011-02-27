@@ -7,6 +7,7 @@ All rights reserved.
 local addonName, addon = ...
 
 addon:NewEncounterModule('The Bastion of Twilight/Valiona and Theralion')
+	:InMaps("TheBastionofTwilight")
 	:AgainstMobs(45992, 45993)
 	:WatchAuras(86788, 92876, 92877, 92878, { range = -10, duration = 15 }) -- Blackout
 	:WatchAuras(92861, 86013, 92859, { range = 8, duration = 6 }) -- Twilight Meteorite

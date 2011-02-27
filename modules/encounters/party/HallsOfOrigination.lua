@@ -7,6 +7,7 @@ All rights reserved.
 local addonName, addon = ...
 
 addon:NewEncounterModule('Halls of Origination/Water warden')
+	:InMaps("HallsofOrigination")
 	:AgainstMobs(39802)
 	:WatchAuras(77336, 91158) -- Bubble Bound
 

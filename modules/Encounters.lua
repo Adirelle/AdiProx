@@ -7,18 +7,213 @@ All rights reserved.
 local addonName, addon = ...
 local L = addon.L
 
-local mod = addon:NewModule('Encounters')
+local mod = addon:NewModule('Encounters', 'AceEvent-3.0', 'AceTimer-3.0', 'LibCombatLogEvent-1.0')
+
+--------------------------------------------------------------------------------
+-- Helpers
+--------------------------------------------------------------------------------
+
+local UnitGUID, UnitExists, UnitIsDeadOrGhost, UnitAffectingCombat = UnitGUID, UnitExists, UnitIsDeadOrGhost, UnitAffectingCombat
+local band = bit.band
+
+local function GetMobID(guid)
+	if guid and band(tonumber(strsub(guid, 5, 5), 16), 7) == 3 then
+		return tonumber(strsub(guid, 7, 10), 16)
+	end
+end
+
+local schools = {
+	PHYSICAL = SCHOOL_MASK_PHYSICAL,
+	HOLY     = SCHOOL_MASK_HOLY,
+	FIRE     = SCHOOL_MASK_FIRE,
+	NATURE   = SCHOOL_MASK_NATURE,
+	FROST    = SCHOOL_MASK_FROST,
+	SHADOW   = SCHOOL_MASK_SHADOW,
+	ARCANE   = SCHOOL_MASK_ARCANE,
+}
+local function GetSchoolColor(spellSchool)
+	if spellSchool then
+		for school, mask in pairs(schools) do
+			if band(spellSchool, mask) ~= 0 then
+				return school
+			end
+		end
+	end
+end
+
+local function GetDebuffColor(spellId)
+	return (select(5, GetSpellInfo(spellId)))
+end
 
 local function GetSlug(name)
 	return name and gsub(name, "%W+", "")
 end
 
-function addon:NewEncounterModule(name, ...)
-	local instance, encounter = strsplit('/', name)
-	local newMod = mod:NewModule(GetSlug(name), ...)
-	newMod.instance = strtrim(instance)
-	newMod.encounter = encounter and strtrim(encounter)
-	return newMod 
+--------------------------------------------------------------------------------
+-- The module itself
+--------------------------------------------------------------------------------
+
+local currentMap
+local engagedMobs = {}
+local watchedMobs
+
+function mod:PostInitialize()
+	-- Build a dictionnary of maps (and encounter per map)
+	local maps = {}
+	for name, module in self:IterateModules() do
+		for map in pairs(module.maps) do
+			if not maps[map] then
+				self:Debug('Have encounters in', map)
+				maps[map] = {}
+			end
+			if module.mobs then
+				local mapEncounters = maps[map]
+				for mobId in pairs(module.mobs) do
+					--@debug@
+					if not maps[map][mobId] then
+						self:Debug('- looking for mob', mobId)
+					end
+					--@end-debug@
+					maps[map][mobId] = true
+				end
+			end
+		end
+	end
+	self.maps = maps
+end
+
+function mod:PostEnable()
+	wipe(engagedMobs)
+	currentMap, watchedMobs = nil
+	self:RegisterMessage('AdiProx_OnMapChanged', 'OnMapChanged')
+	self:OnMapChanged('AdiProx_OnMapChanged')
+end
+
+function mod:OnMapChanged(event)
+	if addon.currentMap == currentMap then return end
+	self:Debug('OnMapChanged:', addon.currentMap)
+	currentMap = addon.currentMap
+	watchedMobs = self.maps[currentMap]
+	if watchedMobs and not next(watchedMobs) then
+		watchedMobs = nil
+	end
+	if watchedMobs then
+		self:Debug('Have mobs to watch')
+		self:RegisterEvent('INSTANCE_ENCOUNTER_ENGAGE_UNIT_DEAD', 'CheckPull')
+		self:RegisterEvent('PLAYER_REGEN_DISABLED', 'CheckPull')
+		self:RegisterEvent('PLAYER_ALIVE', 'CheckPull')
+	else
+		self:Debug('No mob to watch')
+		self:UnregisterEvent('INSTANCE_ENCOUNTER_ENGAGE_UNIT_DEAD')
+		self:UnregisterEvent('PLAYER_REGEN_DISABLED')
+		self:UnregisterEvent('PLAYER_ALIVE')
+	end
+	return self:CheckPull(event)
+end
+
+local function IsFighting(unit)
+	return UnitExists(unit) and not UnitIsDeadOrGhost(unit) and UnitAffectingCombat(unit)
+end
+
+local function CheckUnit(unit)
+	if UnitExists(unit) and not UnitIsDeadOrGhost(unit) then
+		local mobID = GetMobID(UnitGUID(unit))
+		mod:Debug('CheckUnit(', unit, ')', UnitName(unit), UnitGUID(unit), mobID)
+		if mobID and watchedMobs[mobID] and not engagedMobs[mobID] then
+			mod:Debug('Found mob', mobID, ':', unit)
+			engagedMobs[mobID] = true
+			return true
+		end
+	end
+end
+
+function mod:UpdateEvents()
+	if next(engagedMobs) then
+		self:RegisterEvent('PLAYER_REGEN_ENABLED', 'CheckEndOfCombat')
+		self:RegisterEvent('PLAYER_DEAD', 'CheckEndOfCombat')
+		self:RegisterCombatLogEvent('PARTY_KILLED', 'CheckEndOfCombat')
+		self:RegisterCombatLogEvent('UNIT_DIED', 'UnitDied')
+	else
+		self:UnregisterEvent('PLAYER_REGEN_ENABLED')
+		self:UnregisterEvent('PLAYER_DEAD')
+		self:UnregisterCombatLogEvent('PARTY_KILLED')
+		self:UnregisterCombatLogEvent('UNIT_DIED')
+	end
+end
+
+function mod:CheckPull(event)
+	self:Debug('CheckPull', event)
+	local changed = (event == 'AdiProx_OnMapChanged')
+	if watchedMobs then
+		for i = 1, 4 do
+			if CheckUnit("boss"..i) then
+				changed = true
+			end		
+		end
+		if IsFighting("player") then
+			if CheckUnit("target") then
+				changed = true
+			end
+			if CheckUnit("focus") then
+				changed = true
+			end
+		end
+		local prefix, num = self.groupType, self.groupSize
+		if prefix and num then
+			for i = 1, num do
+				if IsFighting(prefix..num) then
+					if CheckUnit(format("%starget%d", prefix, num)) then
+						changed = true
+					end
+				end
+			end		
+		end
+	end
+	if changed then
+		self:UpdateEvents()
+		self:SendMessage('AdiProx_EncounterChanged')
+	end
+end
+
+function mod:CheckEndOfCombat(event)
+	if self.eocTimer then
+		self.eocTimer = self:CancelTimer(self.eocTimer, true)
+	end
+	if next(engagedMobs) then
+		local inCombat = IsFighting("player") or IsFighting("pet")
+		if not inCombat and self.groupType and self.groupSize then
+			self:Debug('CheckEndOfCombat: checking the group')
+			local prefix = self.groupType
+			for i = 1, self.groupSize do
+				if IsFighting(prefix..i) then
+					inCombat = true
+					break
+				end
+			end
+		end
+		if not inCombat then
+			wipe(engagedMobs)
+		elseif not self.eocTimer then
+			self.eocTimer = self:ScheduleRepeatingTimer("CheckEndOfCombat", 3, "Timer")
+		end
+	end
+	if not next(engagedMobs) then
+		self:UpdateEvents()
+		mod:Debug('Combat ended')
+		self:SendMessage('AdiProx_EncounterChanged')
+	end
+end
+
+function mod:UnitDied(event, args)
+	local mobID = GetMobID(args.srcGUID)
+	if mobID then
+		engagedMobs[modID] = nil
+	end
+	mobID = GetMobID(args.destGUID)
+	if mobID then
+		engagedMobs[modID] = nil
+	end
+	return self:CheckWipe(event)
 end
 
 function mod:GetOptions()
@@ -56,46 +251,17 @@ function mod:GetOptions()
 end
 
 --------------------------------------------------------------------------------
--- Helpers
+-- Encounter module prototype
 --------------------------------------------------------------------------------
 
-local function GetMobID(guid)
-	if guid then
-	-- 0x??A?BBBBB??????? with B being the NPC id if the GUID type (A) is either 3 or B
-		local mobID = strmatch(guid, "0x%x%x[3B]%x(%x%x%x%x%x)%x%x%x%x%x%x%x")
-		if mobID then
-			return tonumber(mobID, 16)
-		end
-	end
+function addon:NewEncounterModule(name, ...)
+	local instance, encounter = strsplit('/', name)
+	local newMod = mod:NewModule(GetSlug(name), ...)
+	newMod.instance = strtrim(instance)
+	newMod.encounter = encounter and strtrim(encounter)
+	newMod.maps = {}
+	return newMod 
 end
-
-local band = bit.band
-local schools = {
-	PHYSICAL = SCHOOL_MASK_PHYSICAL,
-	HOLY     = SCHOOL_MASK_HOLY,
-	FIRE     = SCHOOL_MASK_FIRE,
-	NATURE   = SCHOOL_MASK_NATURE,
-	FROST    = SCHOOL_MASK_FROST,
-	SHADOW   = SCHOOL_MASK_SHADOW,
-	ARCANE   = SCHOOL_MASK_ARCANE,
-}
-local function GetSchoolColor(spellSchool)
-	if spellSchool then
-		for school, mask in pairs(schools) do
-			if band(spellSchool, mask) ~= 0 then
-				return school
-			end
-		end
-	end
-end
-
-local function GetDebuffColor(spellId)
-	return (select(5, GetSpellInfo(spellId)))
-end
-
---------------------------------------------------------------------------------
--- Module prototype
---------------------------------------------------------------------------------
 
 local moduleProto = {}
 for k, v in pairs(addon.moduleProto) do
@@ -111,17 +277,15 @@ mod:SetDefaultModuleState(false)
 mod:SetDefaultModuleLibraries('LibCombatLogEvent-1.0', 'AceEvent-3.0', 'AceTimer-3.0')
 
 function moduleProto:ShouldEnable()
-	if addon.moduleProto.ShouldEnable(self) then
-		if self.maps and self.maps[GetMapInfo()] then
-			return true
-		end
+	if addon.moduleProto.ShouldEnable(self) and self.maps[currentMap] then
 		if self.mobs then
-			for i = 1, 4 do
-				local id = GetMobID(UnitGUID("boss"..i))
-				if self.mobs[id] then
+			for id in pairs(self.mobs) do
+				if engagedMobs[id] then
 					return true
-				end
+				end				
 			end
+		else
+			return true
 		end
 	end
 	return false
@@ -174,14 +338,7 @@ function moduleProto:WatchSpellCasts(...) return MergeDict(self, "spellCasts", .
 -- Enabling
 
 function moduleProto:PostInitialize()
-	local function UpdateEnabledState(...) return self:UpdateEnabledState(...) end
-	self.RegisterEvent(self.name, 'PLAYER_ENTERING_WORLD', UpdateEnabledState)
-	if self.mobs then
-		self.RegisterEvent(self.name, 'INSTANCE_ENCOUNTER_ENGAGE_UNIT', UpdateEnabledState)
-	end
-	if self.maps then
-		self.RegisterMessage(self.name, 'AdiProx_MapChanged', UpdateEnabledState)
-	end
+	self.RegisterMessage(self.name, 'AdiProx_EncounterChanged', function(...) return self:UpdateEnabledState(...) end)
 end
 
 function moduleProto:PostEnable()
