@@ -11,10 +11,16 @@ local mod = addon:NewModule('Group', 'AceEvent-3.0')
 
 mod.default_db = {
 	profile = {
+		highlightTarget = true,
 		trackTarget = true,
+		targetColor = { 0.98, 1.0, 0.36, 1.0 },
+		showSymbols = true,
 		trackSymbols = {
 			['*'] = false
 		},
+		highlightFocus = true,
+		trackFocus = true,
+		focusColor = { 0.38, 1.0, 0.1, 1.0 },
 	}
 }
 
@@ -45,25 +51,81 @@ function mod.GetOptions()
 		name = L['Party/raid'],
 		type = 'group',
 		args = {
-			trackTarget = {
-				name = L['Track target'],
-				type = 'toggle',
+			target = {
+				name = L['Target'],
+				type = 'group',
+				inline = true,
 				order = 10,
+				args = {
+					highlightTarget = {
+						name = L['Highlight'],
+						type = 'toggle',
+						order = 10,
+					},
+					trackTarget = {
+						name = L['Track'],
+						type = 'toggle',
+						order = 20,
+					},
+					targetColor = {
+						name = L['Highlight color'],
+						type = 'color',
+						hasAlpha = true,
+						disabled = function() return not prefs.highlightTarget end,
+					},
+				}
 			},
-			trackSymbols = {
-				name = L['Track symbols'],
-				type = 'multiselect',
-				values = {
-					RAID_TARGET_1,
-					RAID_TARGET_1,
-					RAID_TARGET_2,
-					RAID_TARGET_4,
-					RAID_TARGET_5,
-					RAID_TARGET_6,
-					RAID_TARGET_7,
-					RAID_TARGET_8,
-				},
+			focus = {
+				name = L['Focus'],
+				type = 'group',
+				inline = true,
 				order = 20,
+				args = {
+					highlightFocus = {
+						name = L['Highlight'],
+						type = 'toggle',
+						order = 10,
+					},
+					trackFocus = {
+						name = L['Track'],
+						type = 'toggle',
+						order = 20,
+					},
+					focusColor = {
+						name = L['Highlight color'],
+						type = 'color',
+						hasAlpha = true,
+						disabled = function() return not prefs.highlightFocus end,
+					},					
+				}
+			},
+			symbols = {
+				name = L['Raid symbols'],
+				type = 'group',			
+				inline = true,
+				order = 30,
+				args = {
+					showSymbols = {
+						name = L['Show'],
+						type = 'toggle',
+						order = 10,
+					},
+					trackSymbols = {
+						name = L['Track'],
+						type = 'multiselect',
+						values = {
+							RAID_TARGET_1,
+							RAID_TARGET_2,
+							RAID_TARGET_3,
+							RAID_TARGET_4,
+							RAID_TARGET_5,
+							RAID_TARGET_6,
+							RAID_TARGET_7,
+							RAID_TARGET_8,
+						},
+						order = 20,
+					},
+				},
 			},
 		},
 	}
@@ -86,11 +148,11 @@ function partyWidgetProto:CreateFrame(parent)
 	icon:SetPoint("CENTER")
 	self.Icon = icon
 	
-	local targetRing = addon:CreateTexture(frame, nil, "OVERLAY")
-	targetRing:SetTexture("smallcircle")
-	targetRing:SetPoint("CENTER")
-	targetRing:SetSize(16, 16)
-	self.TargetRing = targetRing
+	local highlight = addon:CreateTexture(frame, nil, "OVERLAY")
+	highlight:SetTexture("smallcircle")
+	highlight:SetPoint("CENTER")
+	highlight:SetSize(16, 16)
+	self.Highlight = highlight
 
 	local name = frame:CreateFontString(nil, "OVERLAY", "SystemFont_Shadow_Small")
 	name:SetPoint("BOTTOM", icon, "CENTER", 0, 8)
@@ -101,6 +163,7 @@ end
 
 function partyWidgetProto:Update()
 	local unit = self.unit
+	if not unit then return end
 	local r, g, b = addon.ParseColor(select(2, UnitClass(unit)))
 
 	local name = self.Name
@@ -109,7 +172,7 @@ function partyWidgetProto:Update()
 
 	local symbol = GetRaidTargetIndex(unit)
 	local icon = self.Icon
-	if symbol then
+	if prefs.showSymbols and symbol then
 		icon:SetTexture([[Interface\TargetingFrame\UI-RaidTargetingIcon_]]..symbol)
 		icon:SetTexCoord(0, 1, 0, 1)
 		icon:SetVertexColor(1, 1, 1)
@@ -121,7 +184,78 @@ function partyWidgetProto:Update()
 		icon:SetSize(16, 16)
 	end
 	
-	return self:PLAYER_TARGET_CHANGED()
+	return self:UpdateStatus()
+end
+
+function partyWidgetProto:OnConfigChanged()
+	self:UpdateEvents()
+	self:Update()
+end
+
+function partyWidgetProto:OnUnitEvent(event, unit)
+	if unit == self.unit then
+		return self:Update()
+	end
+end
+
+function partyWidgetProto:UpdateEvents()
+	local unit = self.unit
+	if not self.unit then
+		AceEvent.UnregisterEvent(self, 'UNIT_NAME_UPDATE')
+		AceEvent.UnregisterEvent(self, 'PARTY_MEMBERS_CHANGED')
+		AceEvent.UnregisterEvent(self, 'PLAYER_TARGET_CHANGED')
+		AceEvent.UnregisterEvent(self, 'PLAYER_FOCUS_CHANGED')
+		AceEvent.UnregisterEvent(self, 'RAID_TARGET_UPDATE')
+		return
+	end
+	AceEvent.RegisterEvent(self, 'UNIT_NAME_UPDATE', 'OnUnitEvent')
+	AceEvent.RegisterEvent(self, 'PARTY_MEMBERS_CHANGED', 'Update')			
+	if prefs.highlightTarget then
+		AceEvent.RegisterEvent(self, 'PLAYER_TARGET_CHANGED', 'UpdateStatus')
+	else
+		AceEvent.UnregisterEvent(self, 'PLAYER_TARGET_CHANGED')
+	end
+	if prefs.highlightFocus then
+		AceEvent.RegisterEvent(self, 'PLAYER_FOCUS_CHANGED', 'UpdateStatus')
+	else
+		AceEvent.UnregisterEvent(self, 'PLAYER_FOCUS_CHANGED')
+	end	
+	if prefs.showSymbols then		
+		AceEvent.RegisterEvent(self, 'RAID_TARGET_UPDATE', 'Update')
+	else
+		AceEvent.UnregisterEvent(self, 'RAID_TARGET_UPDATE')
+	end
+end
+
+function partyWidgetProto:UpdateStatus()
+	local unit = self.unit
+	if not unit then return end
+	local isTarget, isFocus = UnitIsUnit(unit, "target"), UnitIsUnit(unit, "focus")
+	local highlight, color
+	if isTarget and prefs.highlightTarget then
+		highlight, color = true, prefs.targetColor
+	elseif isFocus and prefs.highlightFocus then
+		highlight, color = true, prefs.focusColor
+	end
+	if highlight then
+		self.Highlight:SetVertexColor(unpack(color))
+		self.Highlight:Show()
+	else
+		self.Highlight:Hide()
+	end
+	self:SetImportant((isTarget and prefs.trackTarget) or (isFocus and prefs.trackFocus) or (prefs.trackSymbols[GetRaidTargetIndex(unit) or "none"]))
+end
+
+function partyWidgetProto:OnPositionChanged()
+	local unit = self.position and self.position.unit
+	if unit ~= self.unit then
+		self:Debug('OnPositionChanged', unit)
+		self.unit = unit
+		self:UpdateEvents()
+		if unit then		
+			self:Update()
+		end
+	end
 end
 
 function partyWidgetProto:SetPoint(...)
@@ -133,46 +267,4 @@ function partyWidgetProto:SetPoint(...)
 	end
 end
 
-function partyWidgetProto:OnPositionChanged()
-	local unit = self.position and self.position.unit
-	if unit ~= self.unit then
-		self:Debug('OnPositionChanged', unit)
-		if unit and not self.unit then
-			AceEvent.RegisterEvent(self, 'UNIT_NAME_UPDATE', 'OnUnitEvent')
-			AceEvent.RegisterEvent(self, 'RAID_TARGET_UPDATE', 'Update')
-			AceEvent.RegisterEvent(self, 'PARTY_MEMBERS_CHANGED', 'Update')
-			AceEvent.RegisterEvent(self, 'PLAYER_TARGET_CHANGED')
-		elseif not unit and self.unit then
-			AceEvent.UnregisterEvent(self, 'UNIT_NAME_UPDATE')
-			AceEvent.UnregisterEvent(self, 'RAID_TARGET_UPDATE')
-			AceEvent.UnregisterEvent(self, 'PARTY_MEMBERS_CHANGED')
-			AceEvent.UnregisterEvent(self, 'PLAYER_TARGET_CHANGED')
-		end
-		self.unit = unit
-		if unit then		
-			self:Update()
-		end
-	end
-end
-
-function partyWidgetProto:PLAYER_TARGET_CHANGED()
-	if not self.unit then return end
-	if UnitIsUnit(self.unit, "target") then
-		self.TargetRing:Show()
-		if prefs.trackTarget then
-			self:SetImportant(true)
-			return
-		end
-	else
-		self.TargetRing:Hide()
-	end
-	local symbol = GetRaidTargetIndex(self.unit)
-	self:SetImportant(symbol and prefs.trackSymbols[symbol] or false)
-end
-
-function partyWidgetProto:OnUnitEvent(event, unit)
-	if unit == self.unit then
-		return self:Update()
-	end
-end
 
