@@ -11,6 +11,8 @@ local mod = addon:NewModule('Group', 'AceEvent-3.0')
 
 mod.default_db = {
 	profile = {
+		hideInCombat = true,
+		importantName = true,
 		highlightTarget = true,
 		trackTarget = true,
 		targetColor = { 0.98, 1.0, 0.36, 1.0 },
@@ -51,6 +53,16 @@ function mod.GetOptions()
 		name = L['Party/raid'],
 		type = 'group',
 		args = {
+			hideInCombat = {
+				name = L['Hide in combat'],
+				type = 'toggle',
+				order = 8,
+			},
+			importantName = {
+				name = L['Show name of tracked units'],
+				type = 'toggle',
+				order = 9,
+			},
 			target = {
 				name = L['Target'],
 				type = 'group',
@@ -258,9 +270,13 @@ function partyWidgetProto:OnPositionChanged()
 	end
 end
 
+function partyWidgetProto:ShouldBeShown(onEdge)
+	return self:IsActive() and (not prefs.hideInCombat or self.important or self.position:GetAlert() or self.position.important)
+end
+
 function partyWidgetProto:SetPoint(...)
 	parentProto.SetPoint(self, ...)
-	if self.position:GetAlert() then
+	if self.important and prefs.importantNames or self.position:GetAlert() then
 		self.Name:Show()
 	else
 		self.Name:Hide()
