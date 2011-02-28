@@ -281,4 +281,13 @@ function partyWidgetProto:SetPoint(...)
 	else
 		self.Name:Hide()
 	end
+	local level = self.frameLevel
+	if self.position:GetAlert() then
+		level = level + 2
+	elseif self.important or self.position.important then
+		level = level + 1
+	end
+	if level ~= self.frame:GetFrameLevel() then
+		self.frame:GetFrameLevel(level)
+	end
 end
