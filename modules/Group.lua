@@ -271,16 +271,14 @@ function partyWidgetProto:OnPositionChanged()
 end
 
 function partyWidgetProto:ShouldBeShown(onEdge)
-	return self:IsActive() and (not prefs.hideInCombat or self.important or self.position:GetAlert() or self.position.important)
+	return self:IsActive() and (not prefs.hideInCombat or not UnitAffectingCombat("player") or self.important or self.position:GetAlert() or self.position.important)
 end
 
 function partyWidgetProto:SetPoint(...)
 	parentProto.SetPoint(self, ...)
-	if self.important and prefs.importantNames or self.position:GetAlert() then
+	if self.important and prefs.importantName or self.position:GetAlert() then
 		self.Name:Show()
 	else
 		self.Name:Hide()
 	end
 end
-
-
