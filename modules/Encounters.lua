@@ -234,7 +234,7 @@ function mod:GetOptions()
 	local BZ = LibStub('LibBabble-Zone-3.0', true)
 	local BB = LibStub('LibBabble-Boss-3.0', true)
 	local LBZ = BZ and BZ:GetUnstrictLookupTable() or {}
-	local LBB = BZ and BB:GetUnstrictLookupTable() or {}
+	local LBB = BB and BB:GetUnstrictLookupTable() or {}
 	local instances = {}
 	for name, module in self:IterateModules() do
 		local instance, encounter = module.instance, module.encounter
