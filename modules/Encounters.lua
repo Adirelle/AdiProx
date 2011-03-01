@@ -87,15 +87,20 @@ end
 
 function mod:PostEnable()
 	wipe(engagedMobs)
+	self.eocTimer = nil
 	currentMap, watchedMobs = nil
-	self:RegisterMessage('AdiProx_OnMapChanged', 'OnMapChanged')
-	self:OnMapChanged('AdiProx_OnMapChanged')
+	self:RegisterEvent('PLAYER_ENTERING_WORLD', 'OnMapChanged')
+	self:RegisterEvent("ZONE_CHANGED", 'OnMapChanged')
+	self:RegisterEvent("ZONE_CHANGED_NEW_AREA", 'OnMapChanged')
+	self:RegisterEvent("ZONE_CHANGED_INDOORS", 'OnMapChanged')
+	self:OnMapChanged('PostEnable')
 end
 
 function mod:OnMapChanged(event)
-	self:Debug('OnMapChanged:', addon.currentMap)
-	if addon.currentMap == currentMap then return end
-	currentMap = addon.currentMap
+	local map = GetMapInfo()
+	if map == currentMap then return end
+	self:Debug('New map:', map)
+	currentMap = map
 	watchedMobs = self.maps[currentMap]
 	if watchedMobs and not next(watchedMobs) then
 		watchedMobs = nil
@@ -145,10 +150,9 @@ function mod:UpdateEvents()
 end
 
 function mod:CheckPull(event)
-	self:Debug('CheckPull', event)
-	local changed = (event == 'AdiProx_OnMapChanged')
+	self:Debug('CheckPull on', event)
+	local changed, inCombat = false
 	if watchedMobs then
-		local inCombat = false
 		for i = 1, 4 do
 			if CheckUnit("boss"..i) then
 				inCombat = true
@@ -175,9 +179,11 @@ function mod:CheckPull(event)
 				end
 			end		
 		end
-		if not inCombat and not self.eocTimer then
-			self.eocTimer = self:ScheduleRepeatingTimer("CheckEndOfCombat", 3, "Timer")
-		end
+	end
+	if not inCombat and next(engagedMobs) then
+		self:Debug('Combat ended')
+		wipe(engagedMobs)
+		changed = true
 	end
 	if changed then
 		self:UpdateEvents()
@@ -186,10 +192,7 @@ function mod:CheckPull(event)
 end
 
 function mod:CheckEndOfCombat(event)
-	self:Debug('CheckEndOfCombat', event)
-	if self.eocTimer then
-		self.eocTimer = self:CancelTimer(self.eocTimer, true)
-	end
+	self:Debug('CheckEndOfCombat on', event)
 	if next(engagedMobs) then
 		local inCombat = IsFighting("player") or IsFighting("pet")
 		if not inCombat and self.groupType and self.groupSize then
@@ -204,14 +207,14 @@ function mod:CheckEndOfCombat(event)
 		end
 		if not inCombat then
 			wipe(engagedMobs)
-		elseif not self.eocTimer then
-			self.eocTimer = self:ScheduleRepeatingTimer("CheckEndOfCombat", 3, "Timer")
 		end
 	end
 	if not next(engagedMobs) then
 		self:UpdateEvents()
 		self:Debug('Combat ended')
 		self:SendMessage('AdiProx_EncounterChanged')
+	else
+		self:ScheduleTimer("CheckEndOfCombat", 3, "Timer")
 	end
 end
 
