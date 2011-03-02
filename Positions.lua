@@ -135,6 +135,10 @@ function positionProto:GetAlert()
 	return self.alert
 end
 
+function positionProto:GetLabel()
+	return nil
+end
+
 local cos, sin, max, abs = math.cos, math.sin, math.max, math.abs
 function positionProto:UpdateRelativeCoords(playerX, playerY, rotangle)
 	local isValid, distance, zoomRange, relX, relY = false
@@ -295,6 +299,15 @@ end
 function unitPositionProto:OnRelease()
 	unitPositions[self.unit] = nil
 	positionProto.OnRelease(self)
+end
+
+local ParseColor = addon.ParseColor
+function unitPositionProto:GetLabel()
+	if self.unit then
+		local name, _, class = UnitName(self.unit), UnitClass(self.unit)
+		local r, g, b = ParseColor(class)
+		return format("|cfff%02x%02x%02x%s|r", 255*r, 255*g, 255*b, name)
+	end
 end
 
 function unitPositionProto:GetName()
