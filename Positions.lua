@@ -212,27 +212,55 @@ local function DoLayoutWidget(self, x, y, pixelsPerYard, distance, zoomRange, on
 end
 
 function positionProto:LayoutWidgets(zoomRange, pixelsPerYard)
-	local x, y, onEdge
 	if self.isValid then
-		onEdge = self.zoomRange > zoomRange 
+		onEdge = self.zoomRange > zoomRange
 		if not onEdge or self:IsShownOnEdge() then
-			x, y = self.relX * pixelsPerYard, self.relY * pixelsPerYard
+			self.shown = true
+			local x, y = self.relX * pixelsPerYard, self.relY * pixelsPerYard
+
+			-- Show/hide the edge arrow
+			if onEdge ~= self.onEdge then
+				self.onEdge = onEdge
+				if onEdge then
+					if not self:GetWidget('edge_arrow') then
+						self:Attach('edge_arrow', addon:AcquireWidget('edge_arrow'))
+					end
+				else
+					self:Detach('edge_arrow', true)
+				end
+			end
+
+			-- Show/hide the label
+			local label = self:IsInAlert() and self:GetLabel()
+			if label ~= self.shownLabel then
+				self.shownLabel = label
+				local widget = self:GetWidget('label')
+				if label then
+					if not widget then
+						self:Attach('label', addon:AcquireWidget('label', label))
+					else
+						widget:SetLabel(label)
+					end
+				elseif widget then
+					widget:Release()
+				end
+			end
+
+			-- Do the layout
+			return DoLayoutWidget(self, x, y, pixelsPerYard, distance, zoomRange, onEdge)
 		end
 	end
-	if x and y then	
-		if onEdge then
-			if not self.widgets.edge_arrow then
-				self:Attach('edge_arrow', addon:AcquireWidget('edge_arrow'))
-			end
-		elseif self.widgets.edge_arrow then
-			self.widgets.edge_arrow:Release()
-		end
-		return DoLayoutWidget(self, x, y, pixelsPerYard, distance, zoomRange, onEdge)
-	else
+
+	-- Hide all
+	if self.shown then
+		self.shown, self.onEdge, self.shownLabel = nil, nil, nil
+		self:Detach('label', true)
+		self:Detach('edge_arrow', true)
 		for name, widget in pairs(self.widgets) do
 			widget:Hide()
 		end
 	end
+
 end
 
 --------------------------------------------------------------------------------
