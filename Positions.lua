@@ -138,18 +138,44 @@ function positionProto:UpdateRelativeCoords(playerX, playerY, rotangle)
 	return isValid, distance, zoomRange
 end
 
-function positionProto:IsImportant()
-	local important = false
+function positionProto:UpdateFlags()
+	local important, showOnEdge, tracked = false, false, false
 	if self.isValid then
 		for name, widget in pairs(self.widgets) do
-			if widget:IsImportant() then
-				important = true
+			if widget:IsInAlert() then
+				important, showOnEdge, tracked = true, true, true
 				break
+			else
+				if widget:IsImportant() then
+					important = true
+				end
+				if widget:IsShownOnEdge() then
+					showOnEdge = true
+				end
+				if widget:IsTracked() then
+					tracked = true
+				end
 			end
 		end
 	end
-	self.important = important
-	return important
+	self.important, self.showOnEdge, self.tracked = important, showOnEdge, tracked
+	return important, tracked
+end
+
+function positionProto:IsInAlert()
+	return self.alert
+end
+
+function positionProto:IsImportant()
+	return self.important or self.alert
+end
+
+function positionProto:IsTracked()
+	return self.tracked or self.alert
+end
+
+function positionProto:IsShownOnEdge()
+	return self.showOnEdge or self.tracked or self.alert
 end
 
 local function DoLayoutWidget(self, x, y, pixelsPerYard, distance, zoomRange, onEdge)
@@ -172,7 +198,7 @@ function positionProto:LayoutWidgets(zoomRange, pixelsPerYard)
 	local x, y, onEdge
 	if self.isValid then
 		onEdge = self.zoomRange > zoomRange 
-		if not onEdge or self.important then
+		if not onEdge or self:IsShownOnEdge() then
 			x, y = self.relX * pixelsPerYard, self.relY * pixelsPerYard
 		end
 	end

@@ -129,6 +129,24 @@ function widgetProto:Hide()
 	return self
 end
 
+function widgetProto:SetTracked(tracked)
+	tracked = not not tracked
+	if self.tracked ~= tracked then
+		self.tracked = tracked
+		addon.forceUpdate = true
+	end
+	return self
+end
+
+function widgetProto:SetShowOnEdge(showOnEdge)
+	showOnEdge = not not showOnEdge
+	if self.showOnEdge ~= showOnEdge then
+		self.showOnEdge = showOnEdge
+		addon.forceUpdate = true
+	end
+	return self
+end
+
 function widgetProto:SetImportant(important)
 	important = not not important
 	if self.important ~= important then
@@ -142,12 +160,20 @@ function widgetProto:IsImportant()
 	return self.important or self.alert
 end
 
+function widgetProto:IsTracked()
+	return self.tracked or self.alert
+end
+
+function widgetProto:IsShownOnEdge()
+	return self.showOnEdge or self:IsTracked()
+end
+
 function widgetProto:IsActive()
 	return not not activeWidgets[self]
 end
 
 function widgetProto:ShouldBeShown(onEdge)
-	return self:IsActive()
+	return self:IsActive() and (not onEdge or self:IsShownOnEdge())
 end
 
 function widgetProto:SetExpires(expires)
@@ -190,6 +216,10 @@ function widgetProto:SetAlert(alert)
 		self:OnAlertChanged()
 	end
 	return self
+end
+
+function widgetProto:IsInAlert()
+	return self.alert
 end
 
 function widgetProto:OnAlertChanged()

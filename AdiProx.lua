@@ -227,15 +227,18 @@ function addon:OnUpdate(elapsed)
 		local valid, distance, zoomRange = position:UpdateRelativeCoords(px, py, rotangle)
 		if valid then
 			position:UpdateAlerts(distance, playerPos:UpdateAlerts(distance))
-			if position:IsImportant() then
+			local important, tracked = position:UpdateFlags()
+			if important then
 				showMe = true
+			end
+			if tracked then
 				maxRange = max(maxRange, zoomRange * 1.1)
 			end
 		end
 	end
 
 	-- Finally update player position	
-	if playerPos:IsImportant() then
+	if playerPos:UpdateFlags() then
 		showMe = true
 	end
 	
