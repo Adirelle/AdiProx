@@ -77,10 +77,23 @@ function positionProto:Attach(name, widget)
 	end
 end
 
-function positionProto:Detach(toDetach)
-	for name, widget in pairs(self.widgets) do
-		if name == toDetach or widget == toDetach then
-			self.widgets[name] = nil
+function positionProto:Detach(toDetach, release)
+	local name, widget
+	if type(toDetach) == "string" then
+		name, widget = toDetach, self.widgets[toDetach]
+	else
+		for key, value in pairs(self.widgets) do
+			if value == toDetach then
+				name, widget = key, value
+				break
+			end
+		end
+	end
+	if widget then
+		self.widgets[name] = nil
+		if release then
+			widget:Release()
+		else
 			widget:SetPosition(nil)
 			return widget, name
 		end
@@ -126,7 +139,7 @@ local cos, sin, max, abs = math.cos, math.sin, math.max, math.abs
 function positionProto:UpdateRelativeCoords(playerX, playerY, rotangle)
 	local isValid, distance, zoomRange, relX, relY = false
 	local mapX, mapY = self:GetMapCoords()
-	if mapX and mapY then	
+	if mapX and mapY then
 		local dx, dy
 		distance, dx, dy = LibMapData:Distance(addon.currentMap, addon.currentFloor, playerX, playerY, mapX, mapY)
 		isValid = true
@@ -238,12 +251,13 @@ function staticPositionProto:OnAcquire(x, y, map, floor)
 	positionProto.OnAcquire(self)
 end
 
-function staticPositionProto:Detach(widget)
-	if positionProto.Detach(self, widget) then
+function staticPositionProto:Detach(toDetach, release)
+	local widget, name = positionProto.Detach(self, toDetach, release)
+	if widget then
 		if not next(self.widgets) then
 			self:Release()
 		end
-		return true
+		return widget, name
 	end
 end
 
@@ -320,7 +334,7 @@ function playerPositionProto:GetMapCoords()
 	end
 end
 
-function playerPositionProto:UpdateRelativeCoords()	
+function playerPositionProto:UpdateRelativeCoords()
 	return false -- NOOP
 end
 
