@@ -295,125 +295,6 @@ function widgetProto:GetAnimation(name)
 end
 
 --------------------------------------------------------------------------------
--- Icon widgets
---------------------------------------------------------------------------------
-
-local iconWidgetProto = NewWidgetType('icon', 'abstract')
-
-function iconWidgetProto:CreateFrame(parent, name)
-	return parent:CreateTexture(name, "ARTWORK")	
-end
-
-local function SetColor(c, r, g, b, a)
-	if c[1] ~= r or c[2] ~= g or c[3] ~= b or c[4] ~= a then
-		c[1], c[2], c[3], c[4] = r, g, b, a
-		return true
-	end
-end
-
-function iconWidgetProto:OnCreate()
-	widgetProto.OnCreate(self)
-	self.color = { 1, 1, 1, 1 }
-	self.alertColor = { 1, 1, 1 }
-end
-
-function iconWidgetProto:OnAcquire(texture, size, r, g, b, a, blendMode)
-	widgetProto.OnAcquire(self)
-	if texture then
-		self:SetTexture(texture, blendMode or "BLEND")
-	end
-	if size then
-		self:SetSize(size)
-	end
-	if r and g and b and a then
-		SetColor(self.color, r, g, b, a)
-	else
-		SetColor(self.color, 1, 1, 1, 1)
-	end
-	SetColor(self.alertColor, 1, 0, 0)
-end
-
-function iconWidgetProto:SetTexture(texture, blendMode)
-	if texture ~= self.texture then
-		self.texture = texture
-		self.frame:SetTexture(texture)
-	end
-	if blendMode then
-		self.frame:SetBlendMode(blendMode)
-	end
-	return self
-end
-
-function iconWidgetProto:SetColor(r, g, b, a)
-	if SetColor(self.color, r, g, b, a or 1) then
-		self:OnAlertChanged()
-	end
-	return self
-end
-
-function iconWidgetProto:SetAlertColor(r, g, b)
-	if SetColor(self.alertColor, r, g, b) then
-		self:OnAlertChanged()
-	end
-	return self
-end
-
-function iconWidgetProto:OnAlertChanged()
-	local a = self.color[4]
-	local r, g, b = unpack(self.alert and self.alertColor or self.color, 1, 3)
-	self.frame:SetVertexColor(r, g, b, a)
-end
-
-function iconWidgetProto:SetTexCoords(...)
-	self.frame:SetTexCoords(...)
-	return self
-end
-
-function iconWidgetProto:SetSize(size)
-	if size ~= self.size then
-		self.size = size
-		self.frame:SetSize(size, size)
-	end
-	return self
-end
-
---------------------------------------------------------------------------------
--- Range widgets
---------------------------------------------------------------------------------
-
-local rangeWidgetProto = NewWidgetType('range', 'icon')
-
-function rangeWidgetProto:OnAcquire(texture, radius, radiusModifier, r, g, b, a, blendMode)
-	iconWidgetProto.OnAcquire(self, texture, nil, r, g, b, a, blendMode)
-	self.radius, self.radiusModifier = radius or 16, radiusModifier or 1
-	self.pixelsPerYard = nil
-end
-
-function rangeWidgetProto:SetRadius(radius)
-	if self.radius ~= radius then
-		self.radius = radius
-		addon.forceUpdate = true
-	end
-	return self
-end
-
-function rangeWidgetProto:SetRadiusModifier(radiusModifier)
-	if self.radiusModifier ~= radiusModifier then
-		self.radiusModifier = radiusModifier
-		addon.forceUpdate = true
-	end
-	return self
-end
-
-function rangeWidgetProto:SetPoint(x, y, pixelsPerYard, ...)
-	iconWidgetProto.SetPoint(self, x, y, pixelsPerYard, ...)
-	if pixelsPerYard ~= self.pixelsPerYard then
-		self.pixelsPerYard = pixelsPerYard
-		self:SetSize(2 * self.radius * pixelsPerYard * self.radiusModifier)
-	end
-end
-
---------------------------------------------------------------------------------
 -- Edge arrow
 --------------------------------------------------------------------------------
 
@@ -438,5 +319,55 @@ function edgeArrowProto:SetPoint(x, y, pixelsPerYard, distance, zoomRange, onEdg
 		self.frame:SetRotation(atan2(-x, y))
 		self.frame:SetPoint("CENTER", x * f, y * f)
 		--self.frame:DrawRouteLine(0, 0, x*f, y*f, 10, addon.container, "CENTER")
+	end
+end
+
+--------------------------------------------------------------------------------
+-- Label
+--------------------------------------------------------------------------------
+
+local labelProto = NewWidgetType('label', 'abstract')
+
+function labelProto:CreateFrame(parent)
+	local text = self:CreateFontString(parent, nil, "OVERLAY", "SystemFont_Shadow_Small")
+	return text
+end
+
+function labelProto:OnAcquire(label)
+	widgetProto.OnAcquire(self)
+	self:SetLabel(label)
+end
+
+function labelProto:SetLabel(label)
+	if label and strtrim(label) ==  "" then label = nil end
+	if label ~= self.label then
+		self.label = label
+		self.frame:SetText(label or "")
+	end
+	return self
+end
+
+function labelProto:GetLabel()
+	return label
+end
+
+function labelProto:CreateFrame(parent)
+	local f = self:CreateFontString(parent, nil, "OVERLAY")
+	return f
+end
+
+function labelProto:ShouldBeShown(onEdge)
+	return self:IsActive() and self.label
+end
+
+local atan2 = math.atan2
+function labelProto:SetPoint(x, y, pixelsPerYard, distance, zoomRange, onEdge)
+	if onEdge then
+		local f = zoomRange / self.position.zoomRange
+		x, y = x * f, y * f 
+	end
+	if self.x ~= x or self.y ~= y then
+		self.x, self.y = x, y
+		self.frame:SetPoint("BOTTOM", nil, "CENTER", x, y + 8)
 	end
 end
