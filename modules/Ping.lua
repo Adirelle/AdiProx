@@ -120,7 +120,7 @@ function pingWidgetProto:OnAcquire(x, y, sender)
 	self.Name:SetText(name)
 	self.Name:SetTextColor(addon.ParseColor(select(2, UnitClass(sender))))
 	
-	self:SetImportant(true):SetDuration(5)
+	self:SetImportant(true):SetTracked(true):SetDuration(5)
 	addon:GetStaticPosition(x, y):Attach("ping", self)
 	
 	self:AcquireAnimation("reticle", "targeting", 16):Rotate(-360, 2)
