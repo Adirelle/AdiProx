@@ -46,7 +46,7 @@ end
 --------------------------------------------------------------------------------
 
 local proto, parentProto = addon.NewWidgetType('player_reticle', 'abstract')
-proto.frameLevel = 10
+proto.layerLevel = 3
 
 function proto:CreateFrame(parent)
 	local frame = CreateFrame("Frame", nil, parent)

@@ -540,7 +540,7 @@ end
 --------------------------------------------------------------------------------
 
 local encounterProto, parentProto = addon.NewWidgetType("encounter", "abstract")
-encounterProto.frameLevel = 4
+encounterProto.layerLevel = 2
 
 function encounterProto:OnAcquire(texture, radius, duration, color)
 	self.duration, self.radius = nil, nil

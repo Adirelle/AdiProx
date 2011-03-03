@@ -142,7 +142,7 @@ end
 --------------------------------------------------------------------------------
 
 local partyWidgetProto, parentProto = addon.NewWidgetType('player_blip', 'abstract')
-partyWidgetProto.frameLevel = 8
+partyWidgetProto.layerLevel = 1
 
 local AceEvent = LibStub('AceEvent-3.0')
 

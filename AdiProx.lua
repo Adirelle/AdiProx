@@ -186,6 +186,15 @@ function addon:CreateTheFrame()
 	scrollParent:SetScrollChild(scrollChild)
 	self.container = scrollChild
 	scrollChild:SetSize(scrollParent:GetSize())
+	
+	local layers = {}
+	for i = 1, 4 do
+		local layer = CreateFrame("Frame", nil, scrollChild)
+		layer:SetAllPoints(scrollChild)
+		layer:SetFrameLevel(scrollChild:GetFrameLevel() + i)
+		layers[i] = layer
+	end
+	scrollChild.layers = layers
 end
 
 --------------------------------------------------------------------------------

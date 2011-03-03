@@ -69,14 +69,11 @@ addon.NewWidgetType = NewWidgetType
 local widgetProto = NewWidgetType('abstract')
 
 widgetProto.Debug = addon.Debug
-widgetProto.frameLevel = 5
+widgetProto.layerLevel = 1
 
 function widgetProto:OnCreate()
-	self.frame = self:CreateFrame(addon.container)
+	self.frame = self:CreateFrame(addon.container.layers[self.layerLevel])
 	self.frame:Hide()
-	if self.frameLevel and self.frame.SetFrameLevel then
-		self.frame:SetFrameLevel(self.frameLevel)
-	end
 	self.animations = {}
 end
 
@@ -265,7 +262,7 @@ function widgetProto:AcquireAnimation(name, ...)
 	end
 	local animation = addon:AcquireAnimation(self.frame, ...)
 	self.animations[name] = animation
-	animation:SetFrameLevel(self.frameLevel)
+	--animation:SetFrameLevel(self:GetParent():GetFrameLevel()+1)
 	animation:Attach(self)
 	return animation
 end
@@ -299,6 +296,7 @@ end
 --------------------------------------------------------------------------------
 
 local edgeArrowProto = NewWidgetType('edge_arrow', 'abstract')
+edgeArrowProto.layerLevel = 4
 
 function edgeArrowProto:CreateFrame(parent, name)
 	local f = addon:CreateTexture(parent, name, "OVERLAY")
@@ -327,6 +325,7 @@ end
 --------------------------------------------------------------------------------
 
 local labelProto = NewWidgetType('label', 'abstract')
+edgeArrowProto.layerLevel = 4
 
 function labelProto:CreateFrame(parent)
 	return parent:CreateFontString(nil, "OVERLAY", "SystemFont_Shadow_Small", 1)
