@@ -145,6 +145,7 @@ function addon:UpdateEnabledState(...)
 	elseif not enable and self:IsEnabled() then 
 		self:Disable()
 	end
+	return enable
 end
 
 function addon:OnConfigChanged()
