@@ -193,6 +193,10 @@ end
 
 function mod:CheckEndOfCombat(event)
 	self:Debug('CheckEndOfCombat on', event)
+	if self.eocTimer then
+		self:CancelTimer(self.eocTimer, true)
+		self.eocTimer = nil
+	end
 	if next(engagedMobs) then
 		local inCombat = IsFighting("player") or IsFighting("pet")
 		if not inCombat and self.groupType and self.groupSize then
@@ -214,7 +218,7 @@ function mod:CheckEndOfCombat(event)
 		self:Debug('Combat ended')
 		self:SendMessage('AdiProx_EncounterChanged')
 	else
-		self:ScheduleTimer("CheckEndOfCombat", 3, "Timer")
+		self.eocTimer = self:ScheduleTimer("CheckEndOfCombat", 3, "Timer")
 	end
 end
 
@@ -378,25 +382,22 @@ function moduleProto:PlaceMarker(key, target, static, markerType, color, radius,
 	self:Debug('PlaceMarker(', "key=", key, "target=", target, "static=", static, "type=", markerType, "color=", color, "radius=", radius, "duration=", duration, ')')
 	local position = addon:GetUnitPosition(target)
 	if not position then
-		self:Debug('PlaceMarker: no position for', target, ', giving up')
 		return
 	end
 	if static then
 		position = position:GetStaticPosition()
 	end
 	local widget = position:GetWidget(key)
-	self:Debug('PlaceMarker: position=', position, 'existingMarker=', marker)
 	local reverse = radius and radius < 0
 	if reverse then
 		radius = -radius
 	end
 	if not widget then
-		self:Debug('PlaceMarker: creating a new marker')
+		self:Debug('PlaceMarker: ', GetSpellInfo(tonumber(strmatch(key, '%d+'))), ' on', (UnitName(target)))
 		widget = self:AcquireWidget(markerType or (radius and "encounter_proximity") or "encounter_reticle", radius, duration, color)
 		widget:SetImportant(true)
 		position:Attach(key, widget)
 	else
-		self:Debug('PlaceMarker: refreshing the existing marker')
 		widget:Refresh(radius, duration)
 	end
 	widget:SetAlertRadius(radius, reverse)
