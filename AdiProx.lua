@@ -231,7 +231,8 @@ function addon:OnUpdate(elapsed)
 
 	local showMe = not prefs.autoHide or IsShiftKeyDown()
 	local rotangle = 2 * math.pi - GetPlayerFacing()
-	local maxRange = prefs.minZoomRange
+	local highestDistance = prefs.minZoomRange
+	local maxZoom = prefs.autoZoom and prefs.maxZoomRange or (2 * prefs.zoomRange)
 
 	playerPos:ResetAlerts()
 	
@@ -243,8 +244,8 @@ function addon:OnUpdate(elapsed)
 			if important then
 				showMe = true
 			end
-			if tracked then
-				maxRange = max(maxRange, zoomRange * 1.1)
+			if tracked and zoomRange < maxZoom then
+				highestDistance = max(highestDistance, zoomRange * 1.1)
 			end
 		end
 	end
@@ -260,7 +261,7 @@ function addon:OnUpdate(elapsed)
 	end
 	
 	if prefs.autoZoom then
-		local idealZoom = min(prefs.minZoomRange * pow(2, ceil(log(maxRange / prefs.minZoomRange) / log2)), prefs.maxZoomRange)
+		local idealZoom = min(prefs.minZoomRange * pow(2, ceil(log(highestDistance / prefs.minZoomRange) / log2)), prefs.maxZoomRange)
 		if not self.frame:IsShown() then
 			-- Directly use the ideal zoom on show
 			actualZoom, nextZoom, targetZoom = idealZoom, idealZoom, idealZoom
