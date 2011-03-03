@@ -239,7 +239,8 @@ function addon:OnUpdate(elapsed)
 	for position in self:IterateActivePositions() do
 		local valid, distance, zoomRange = position:UpdateRelativeCoords(px, py, rotangle)
 		if valid then
-			position:UpdateAlerts(distance, playerPos:UpdateAlerts(distance))
+			local playerAlert = not position:GetIgnoreAlert() and playerPos:UpdateAlerts(distance)
+			position:UpdateAlerts(distance, playerAlert)
 			local important, tracked = position:UpdateFlags()
 			if important then
 				showMe = true

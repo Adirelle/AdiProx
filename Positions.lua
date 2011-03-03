@@ -44,6 +44,7 @@ function positionProto:OnCreate()
 end
 
 function positionProto:OnAcquire()
+	self.alert, self.ignoreAlert, self.important, self.showOnEdge, self.tracked = nil, nil, nil, nil, nil
 	self:Debug('Acquired')
 end
 
@@ -109,9 +110,10 @@ function positionProto:IterateWidgets()
 end
 
 function positionProto:UpdateAlerts(distance, defaultState)
-	local alert = defaultState
+	local ignore = self.ignoreAlert
+	local alert = not ignore and defaultState or false
 	for name, widget in pairs(self.widgets) do
-		if widget:TestAlert(distance) then
+		if not ignore and widget:TestAlert(distance) then
 			widget:SetAlert(true)
 			alert = true
 		else
@@ -137,6 +139,19 @@ end
 
 function positionProto:GetLabel()
 	return nil
+end
+
+function positionProto:SetIgnoreAlert(ignore)
+	ignore = not not ignore
+	if self.ignoreAlert ~= ignore then
+		self.ignoreAlert = ignore
+		addon.forceUpdate = true
+	end
+	return self
+end
+
+function positionProto:GetIgnoreAlert()
+	return self.ignoreAlert
 end
 
 local cos, sin, max, abs = math.cos, math.sin, math.max, math.abs
