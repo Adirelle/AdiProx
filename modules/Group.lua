@@ -232,7 +232,8 @@ function partyWidgetProto:UpdateStatus()
 	else
 		self.Highlight:Hide()
 	end
-	self:SetImportant((isTarget and prefs.trackTarget) or (isFocus and prefs.trackFocus) or (prefs.trackSymbols[GetRaidTargetIndex(unit) or "none"]))
+	local important = (isTarget and prefs.trackTarget) or (isFocus and prefs.trackFocus) or (prefs.trackSymbols[GetRaidTargetIndex(unit) or "none"])
+	self:SetImportant(important):SetTracked(important)
 end
 
 function partyWidgetProto:OnPositionChanged()
@@ -248,6 +249,6 @@ function partyWidgetProto:OnPositionChanged()
 end
 
 function partyWidgetProto:ShouldBeShown(onEdge)
-	return self:IsActive() and (not prefs.hideInCombat or not UnitAffectingCombat("player") or self.important or self.position:GetAlert() or self.position.important)
+	return self:IsActive() and (not prefs.hideInCombat or not UnitAffectingCombat("player") or self:IsTracked())
 end
 
