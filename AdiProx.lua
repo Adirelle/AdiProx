@@ -72,7 +72,7 @@ function addon:OnInitialize()
 	LibStub('AceConfig-3.0'):RegisterOptionsTable(addonName, self.GetOptions)
 	self.blizPanel = LibStub('AceConfigDialog-3.0'):AddToBlizOptions(addonName, addonName)
 
-	self:RegisterChatCommand("acm", "ChatCommand", true)
+	self:RegisterChatCommand("adp", "ChatCommand", true)
 	self:RegisterChatCommand(addonName, "ChatCommand", true)
 	
 	self:SetEnabledState(self:ShouldEnable())
