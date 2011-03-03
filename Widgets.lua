@@ -329,13 +329,13 @@ end
 local labelProto = NewWidgetType('label', 'abstract')
 
 function labelProto:CreateFrame(parent)
-	local text = self:CreateFontString(parent, nil, "OVERLAY", "SystemFont_Shadow_Small")
-	return text
+	return parent:CreateFontString(nil, "OVERLAY", "SystemFont_Shadow_Small", 1)
 end
 
 function labelProto:OnAcquire(label)
-	widgetProto.OnAcquire(self)
+	self.x, self.y = nil, nil
 	self:SetLabel(label)
+	return widgetProto.OnAcquire(self)
 end
 
 function labelProto:SetLabel(label)
@@ -351,23 +351,17 @@ function labelProto:GetLabel()
 	return label
 end
 
-function labelProto:CreateFrame(parent)
-	local f = self:CreateFontString(parent, nil, "OVERLAY")
-	return f
-end
-
 function labelProto:ShouldBeShown(onEdge)
 	return self:IsActive() and self.label
 end
 
-local atan2 = math.atan2
 function labelProto:SetPoint(x, y, pixelsPerYard, distance, zoomRange, onEdge)
 	if onEdge then
 		local f = zoomRange / self.position.zoomRange
-		x, y = x * f, y * f 
+		x, y = x * f, y * f
 	end
 	if self.x ~= x or self.y ~= y then
 		self.x, self.y = x, y
-		self.frame:SetPoint("BOTTOM", nil, "CENTER", x, y + 8)
+		self.frame:SetPoint("BOTTOM", self.frame:GetParent(), "CENTER", x, y + 8)
 	end
 end

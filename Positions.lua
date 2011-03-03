@@ -270,7 +270,7 @@ end
 local staticPositionProto = setmetatable({ heap = {} }, positionMeta)
 local staticPositionMeta = { __index = staticPositionProto }
 
-function staticPositionProto:OnAcquire(x, y, map, floor)
+function staticPositionProto:OnAcquire(x, y, map, floor, label)
 	assert(type(x) == "number")
 	assert(type(y) == "number")
 	if not map then
@@ -278,8 +278,8 @@ function staticPositionProto:OnAcquire(x, y, map, floor)
 	else
 		self.map, self.floor = map, floor
 	end
-	self.x = x
-	self.y = y
+	self.x, self.y = x, y
+	self:SetLabel(label)
 	positionProto.OnAcquire(self)
 end
 
@@ -303,8 +303,20 @@ function staticPositionProto:GetMapCoords()
 	end
 end
 
-function addon:GetStaticPosition(x, y, map, floor)
-	return AcquirePosition(staticPositionMeta, x, y, map, floor)
+function staticPositionProto:SetLabel(label)
+	if label and strtrim(label) ~= "" then
+		self.label = label
+	else
+		self.label = nil
+	end
+end
+
+function staticPositionProto:GetLabel()
+	return self.label
+end
+
+function addon:GetStaticPosition(x, y, map, floor, label)
+	return AcquirePosition(staticPositionMeta, x, y, map, floor, label)
 end
 
 --------------------------------------------------------------------------------

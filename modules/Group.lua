@@ -12,7 +12,6 @@ local mod = addon:NewModule('Group', 'AceEvent-3.0')
 mod.default_db = {
 	profile = {
 		hideInCombat = true,
-		importantName = true,
 		highlightTarget = true,
 		trackTarget = true,
 		targetColor = { 0.98, 1.0, 0.36, 1.0 },
@@ -57,11 +56,6 @@ function mod.GetOptions()
 				name = L['Hide in combat'],
 				type = 'toggle',
 				order = 8,
-			},
-			importantName = {
-				name = L['Show name of tracked units'],
-				type = 'toggle',
-				order = 9,
 			},
 			target = {
 				name = L['Target'],
@@ -166,25 +160,16 @@ function partyWidgetProto:CreateFrame(parent)
 	highlight:SetSize(16, 16)
 	self.Highlight = highlight
 
-	local name = frame:CreateFontString(nil, "OVERLAY", "SystemFont_Shadow_Small")
-	name:SetPoint("BOTTOM", icon, "CENTER", 0, 8)
-	self.Name = name
-
 	return frame
 end
 
 function partyWidgetProto:Update()
 	local unit = self.unit
 	if not unit then return end
-	local r, g, b = addon.ParseColor(select(2, UnitClass(unit)))
 
-	local name = self.Name
-	name:SetText(UnitName(unit))
-	name:SetTextColor(r, g, b)
-
-	local symbol = GetRaidTargetIndex(unit)
+	local symbol = prefs.showSymbols and GetRaidTargetIndex(unit)
 	local icon = self.Icon
-	if prefs.showSymbols and symbol then
+	if symbol then
 		icon:SetTexture([[Interface\TargetingFrame\UI-RaidTargetingIcon_]]..symbol)
 		icon:SetTexCoord(0, 1, 0, 1)
 		icon:SetVertexColor(1, 1, 1)
@@ -192,7 +177,7 @@ function partyWidgetProto:Update()
 	else
 		icon:SetTexture([[Interface\Minimap\PartyRaidBlips]])
 		icon:SetTexCoord(0.875, 1, 0.25, 0.5)
-		icon:SetVertexColor(r, g, b)
+		icon:SetVertexColor(addon.ParseColor(select(2, UnitClass(unit))))
 		icon:SetSize(16, 16)
 	end
 	
@@ -204,23 +189,15 @@ function partyWidgetProto:OnConfigChanged()
 	self:Update()
 end
 
-function partyWidgetProto:OnUnitEvent(event, unit)
-	if unit == self.unit then
-		return self:Update()
-	end
-end
-
 function partyWidgetProto:UpdateEvents()
 	local unit = self.unit
 	if not self.unit then
-		AceEvent.UnregisterEvent(self, 'UNIT_NAME_UPDATE')
 		AceEvent.UnregisterEvent(self, 'PARTY_MEMBERS_CHANGED')
 		AceEvent.UnregisterEvent(self, 'PLAYER_TARGET_CHANGED')
 		AceEvent.UnregisterEvent(self, 'PLAYER_FOCUS_CHANGED')
 		AceEvent.UnregisterEvent(self, 'RAID_TARGET_UPDATE')
 		return
 	end
-	AceEvent.RegisterEvent(self, 'UNIT_NAME_UPDATE', 'OnUnitEvent')
 	AceEvent.RegisterEvent(self, 'PARTY_MEMBERS_CHANGED', 'Update')			
 	if prefs.highlightTarget then
 		AceEvent.RegisterEvent(self, 'PLAYER_TARGET_CHANGED', 'UpdateStatus')
@@ -274,20 +251,3 @@ function partyWidgetProto:ShouldBeShown(onEdge)
 	return self:IsActive() and (not prefs.hideInCombat or not UnitAffectingCombat("player") or self.important or self.position:GetAlert() or self.position.important)
 end
 
-function partyWidgetProto:SetPoint(...)
-	parentProto.SetPoint(self, ...)
-	if self.important and prefs.importantName or self.position:GetAlert() then
-		self.Name:Show()
-	else
-		self.Name:Hide()
-	end
-	local level = self.frameLevel
-	if self.position:GetAlert() then
-		level = level + 2
-	elseif self.important or self.position.important then
-		level = level + 1
-	end
-	if level ~= self.frame:GetFrameLevel() then
-		self.frame:GetFrameLevel(level)
-	end
-end

@@ -105,10 +105,12 @@ end
 function aptest()
 	local px, py = GetPlayerMapPosition("player")
 	if px ~= 0 and py ~= 0 then
-		local pos = addon:GetStaticPosition(px, py)
-		pos:SetAlertCondition(5)
-		local mark = addon:AcquireWidget("range", [[Interface\Cooldown\ping4]], 5, 1, 1, 1, 1, "ADD")
+		local mark = addon:AcquireWidget("encounter_proximity", 5)
 		mark:SetImportant(true)
+		--mark:SetTracked(true)
+		mark:SetAlertRadius(5)
+		local pos = addon:GetStaticPosition(px, py)
+		pos:SetLabel("BLA !")
 		pos:Attach("mark", mark)
 	end
 end
