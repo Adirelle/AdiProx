@@ -11,6 +11,7 @@ local mod = addon:NewModule('Proximity', 'AceConsole-3.0')
 
 function mod:PostInitialize()
 	self:RegisterChatCommand("aprox", "ChatCommand", true)
+	LibStub('AceEvent-3.0').RegisterMessage(self.name, 'AdiProx_SetProximity', function(...) return self:AdiProx_SetProximity(...) end)
 	self.userRange, self.modRange = nil, nil
 end
 
@@ -20,18 +21,26 @@ function mod:ShouldEnable()
 	end
 end
 
-function mod:ChatCommand(value)
+function mod:SetRange(attr, value)
 	value = tonumber(value)
 	if value == 0 then
 		value = nil
 	end
-	if value ~= self.userRange then
-		self:Debug('ChatCommand:', value)
-		self.userRange = value
+	if value ~= self[attr] then
+		self:Debug('SetRange(', attr, value, ')')
+		self[attr] = value
 		if self:UpdateEnabledState() then
 			self:UpdateRange()
 		end
 	end
+end
+
+function mod:ChatCommand(value)
+	return self:SetRange('userRange', value)
+end
+
+function mod:AdiProx_SetProximity(_, value)
+	return self:SetRange('modRange', value)
 end
 
 function mod:UpdateRange()

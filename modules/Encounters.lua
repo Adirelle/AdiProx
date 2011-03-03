@@ -355,6 +355,8 @@ function moduleProto:InMaps(...) return MergeSet(self, "maps", ...) end
 function moduleProto:WatchAuras(...) return MergeDict(self, "auras", ...) end
 function moduleProto:WatchSpellCasts(...) return MergeDict(self, "spellCasts", ...) end
 
+function moduleProto:WatchProximity(value) self.proximity = value return self end
+
 -- Enabling
 
 function moduleProto:PostInitialize()
@@ -374,6 +376,16 @@ function moduleProto:PostEnable()
 		self.currentCast = wipe(self.currentCast or {})
 		self:RegisterCombatLogEvent('SPELL_CAST_START')
 		self:RegisterCombatLogEvent('SPELL_CAST_SUCCESS')
+	end
+	if self.proximity then
+		self:Debug('Proximity:', self.proximity)
+		self:SendMessage('AdiProx_SetProximity', self.proximity)
+	end
+end
+
+function moduleProto:PostDisable()
+	if self.proximity then
+		self:SendMessage('AdiProx_SetProximity', nil)
 	end
 end
 
