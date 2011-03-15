@@ -6,7 +6,7 @@
 ## Version: @project-version@
 ## SavedVariables: AdiProxDB
 ## X-Date: @project-date-iso@
-## OptionalDeps: LibStub, CallbackHandler-1.0, Ace3, LibMapData-1.0, LibBabble-Zone-3.0, LibBabble-Boss-3.0, LibDualSpec-1.0, AdiDebug
+## OptionalDeps: LibStub, CallbackHandler-1.0, Ace3, LibMapData-1.0, LibBabble-Zone-3.0, LibBabble-Boss-3.0, LibDualSpec-1.0, LibCombatLogEvent-1.0, AdiDebug
 
 #@no-lib-strip@
 libs\LibStub\LibStub.lua
@@ -25,9 +25,7 @@ libs\LibMapData-1.0\library.lua
 
 # Not on wowace.com
 libs\LibMovable-1.0\LibMovable-1.0.lua
-
-# Home-made
-LibCombatLogEvent-1.0.lua
+libs\LibCombatLogEvent-1.0\LibCombatLogEvent-1.0.lua
 
 Colors.lua
 Textures.lua
