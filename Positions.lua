@@ -236,12 +236,13 @@ function positionProto:LayoutWidgets(zoomRange, pixelsPerYard)
 			-- Show/hide the edge arrow
 			if onEdge ~= self.onEdge then
 				self.onEdge = onEdge
+				local widget = self:GetWidget('edge_arrow')
 				if onEdge then
-					if not self:GetWidget('edge_arrow') then
+					if not widget then
 						self:Attach('edge_arrow', addon:AcquireWidget('edge_arrow'))
 					end
-				else
-					self:Detach('edge_arrow', true)
+				elseif widget then
+					widget:Release()
 				end
 			end
 

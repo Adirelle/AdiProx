@@ -306,7 +306,7 @@ function edgeArrowProto:CreateFrame(parent, name)
 end
 
 function edgeArrowProto:ShouldBeShown(onEdge)
-	return onEdge and widgetProto.ShouldBeShown(self, onEdge)
+	return self:IsActive() and onEdge
 end
 
 local atan2 = math.atan2
